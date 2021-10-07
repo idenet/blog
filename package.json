@@ -9,7 +9,7 @@
   "scripts": {
     "docs:dev": "vuepress dev docs",
     "docs:build": "vuepress build docs",
-    "deploy": "gh-pages -d docs/.vuepress/dist -m deploy",
+    "deploy": "gh-pages -d dist -m deploy",
     "deploy:build": "npm run docs:build && npm run deploy"
   },
   "keywords": [],

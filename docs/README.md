@@ -12,5 +12,5 @@ features:
   details: 晚成
 - title: For Future
   details: 记录
-footer: Copyright © 2021-present Wangtunan
+footer: Copyright © 2021-present wangzebin
 ---

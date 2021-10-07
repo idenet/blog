@@ -12,15 +12,15 @@ module.exports = {
     lineNumbers: false,
   },
   themeConfig: {
-    // lastUpdated: '最后更新时间',
-    // sidebar: 'auto',
-    // repo: 'https://github.com/wangtunan/blog',
-    // repoLabel: 'Github',
+    lastUpdated: '最后更新时间',
+    sidebar: 'auto',
+    repo: 'https://github.com/idenet/blog',
+    repoLabel: 'Github',
     nav: [
-      // {
-      //   text: 'Vue源码分析',
-      //   link: '/vueAnalysis/introduction/',
-      // },
+      {
+        text: 'Vue源码分析',
+        link: '/vue/vue-router/',
+      },
     ],
     sidebar: {
       '/vue/': vueSidebar,
