@@ -10,29 +10,4 @@
 
 # 从入口开始
 
-```js
-Vue.prototype.$mount = function (
-  el?: string | Element,
-  hydrating?: boolean
-): Component {
-  el = el && query(el)
-
-  /* istanbul ignore if */
-  // 1. el 不能是body或者html
-  if (el === document.body || el === document.documentElement) {
-    process.env.NODE_ENV !== 'production' && warn(
-      `Do not mount Vue to <html> or <body> - mount to normal elements instead.`
-    )
-    return this
-  }
-
-  const options = this.$options
-  // resolve template/el and convert to render function
-  if (!options.render) {
-    // 2. 把template/el 转换成render函数
-    ...
-  }
-  // 调用mount方法，挂载DOM
-  return mount.call(this, el, hydrating)
-}
-```
+![流程图](../../images/6.png)
