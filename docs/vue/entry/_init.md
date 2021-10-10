@@ -19,6 +19,7 @@ Vue.prototype._init = function (options?: Object) {
     vm._uid = uid++
 
     // a flag to avoid this being observed
+    // 是否是vue实例，如果是就不需要进行响应式处理
     vm._isVue = true
     // 合并配置
     if (options && options._isComponent) {

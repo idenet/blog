@@ -35,7 +35,9 @@
 
 # 从入口开始
 
-![流程图](../../images/6.png)
+脑图有完整的根据调试步骤下流程可以回过头来细看。
+
+[飞书中的流程图](https://e0v6qvjc33.feishu.cn/mindnotes/bmncnTjMvH2xbiEwHCTmXZjB53d)
 
 1. 第一步`new vue()`
 

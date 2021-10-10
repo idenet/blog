@@ -12,7 +12,13 @@ const vueSidebar = [
   {
     title: '从入口开始的执行流程',
     collapsable: false,
-    children: ['entry/', 'entry/static', 'entry/instance'],
+    children: [
+      'entry/',
+      'entry/static',
+      'entry/instance',
+      'entry/_init',
+      'entry/initState',
+    ],
   },
 ]
 module.exports = {
