@@ -35,11 +35,13 @@
 
 # 从入口开始
 
-脑图有完整的根据调试步骤下流程可以回过头来细看。
+根据脑图大致了解vue初始化过程，在不同的md中有源码描述了vue的原型成员和静态成员的初始化
 
 [飞书中的流程图](https://e0v6qvjc33.feishu.cn/mindnotes/bmncnTjMvH2xbiEwHCTmXZjB53d)
 
-1. 第一步`new vue()`
+下面是总流程的源码是如何执行的。
+
+1. 第一步`new vue()`，调用了`instance/index.js`文件中的函数，这里只是定义，不涉及`_init调用`。
 
 ```js
 import { initMixin } from './init'
@@ -68,7 +70,9 @@ renderMixin(Vue)
 export default Vue
 ```
 
-1. 执行init方法，方法在initMixin中
+2. 在调试过程中，执行完成`instance/index.js`的文件后，还有一个`core/index.js`会执行，`initGlobalAPI(Vue)`中赋值了所有的静态成员，在`vue静态成员初始化`中有详细描述
+
+3. 到这里所有的vue初始化完成，此时开始执行构造函数中的`_init`方法
 
 ```js
 export function initMixin(Vue) {
@@ -105,7 +109,7 @@ export function initMixin(Vue) {
 }
 ```
 
-3. 执行`$mount`方法，`$mount`方法在`platform/web/entry-runtime-with-compiler`中
+4. 执行`$mount`方法，`$mount`方法在`platform/web/entry-runtime-with-compiler`中
 
 ```js
 // 缓存定义在原型链上的mount方法
@@ -143,7 +147,8 @@ Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
 ): Component {
-  // 判断是不是在浏览器中
+  // 判断是不是在浏览器中，为什么要在判断一遍？因为有可能之前执行的是`entry-runtime`，
+  // 也就是纯用render函数写的vue，所以需要在判断一遍
   el = el && inBrowser ? query(el) : undefined
   return mountComponent(this, el, hydrating)
 }
@@ -189,9 +194,7 @@ export function mountComponent (
     }
   }
 
-  // we set this to vm._watcher inside the watcher's constructor
-  // since the watcher's initial patch may call $forceUpdate (e.g. inside child
-  // component's mounted hook), which relies on vm._watcher being already defined
+  // 实例化Watcher， 里面会执行updateComponent的回调
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
@@ -201,12 +204,89 @@ export function mountComponent (
   }, true /* isRenderWatcher */)
   hydrating = false
 
-  // manually mounted instance, call mounted on self
-  // mounted is called for render-created child components in its inserted hook
+  // 执行mounted钩子函数
   if (vm.$vnode == null) {
     vm._isMounted = true
     callHook(vm, 'mounted')
   }
+  // 返回实例
   return vm
+}
+```
+
+5. `new Watcher()`，核心就是执行了`updateComponent`方法调用了`vm._update(vm._render(), hydrating)`，渲染了真实dom
+
+```js
+export default class Watcher {
+  vm: Component;
+  expression: string;
+  cb: Function;
+  id: number;
+  deep: boolean;
+  user: boolean;
+  lazy: boolean;
+  sync: boolean;
+  dirty: boolean;
+  active: boolean;
+  deps: Array<Dep>;
+  newDeps: Array<Dep>;
+  depIds: SimpleSet;
+  newDepIds: SimpleSet;
+  before: ?Function;
+  getter: Function;
+  value: any;
+
+  constructor (
+    vm: Component,
+    expOrFn: string | Function,
+    cb: Function,
+    options?: ?Object,
+    isRenderWatcher?: boolean
+  ) {
+    ... // 上面响应式相关的先不看，核心就是expOrfn就是之前的updateComponent
+    // parse expression for getter
+    if (typeof expOrFn === 'function') {
+      this.getter = expOrFn
+    } else {
+      this.getter = parsePath(expOrFn)
+      if (!this.getter) {
+        this.getter = noop
+        process.env.NODE_ENV !== 'production' && warn(
+          `Failed watching path: "${expOrFn}" ` +
+          'Watcher only accepts simple dot-delimited paths. ' +
+          'For full control, use a function instead.',
+          vm
+        )
+      }
+    }
+    // 构造函数中会执行一次get方法，为了首次渲染
+    this.value = this.lazy
+      ? undefined
+      : this.get()
+  }
+  get () {
+    pushTarget(this)
+    let value
+    const vm = this.vm
+    try {
+      // 核心执行了updateComponent
+      value = this.getter.call(vm, vm)
+    } catch (e) {
+      if (this.user) {
+        handleError(e, vm, `getter for watcher "${this.expression}"`)
+      } else {
+        throw e
+      }
+    } finally {
+      // "touch" every property so they are all tracked as
+      // dependencies for deep watching
+      if (this.deep) {
+        traverse(value)
+      }
+      popTarget()
+      this.cleanupDeps()
+    }
+    return value
+  }
 }
 ```
