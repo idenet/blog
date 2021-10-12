@@ -20,6 +20,11 @@ const vueSidebar = [
       'entry/initState',
     ],
   },
+  {
+    title: 'vue响应式原理',
+    collapsable: false,
+    children: ['vueReactive/', 'vueReactive/observer'],
+  },
 ]
 module.exports = {
   vueSidebar,

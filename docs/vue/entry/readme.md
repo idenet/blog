@@ -37,7 +37,7 @@
 
 根据脑图大致了解vue初始化过程，在不同的md中有源码描述了vue的原型成员和静态成员的初始化
 
-[飞书中的流程图](https://e0v6qvjc33.feishu.cn/mindnotes/bmncnTjMvH2xbiEwHCTmXZjB53d)
+[newvue流程图](https://e0v6qvjc33.feishu.cn/mindnotes/bmncnTjMvH2xbiEwHCTmXZjB53d)
 
 下面是总流程的源码是如何执行的。
 

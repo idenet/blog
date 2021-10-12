@@ -104,3 +104,21 @@ function initData (vm: Component) {
 
 ```
 
+### proxy(vm, '_data', key)
+
+这行代码其实就是`this.xxx`能触发响应式修改`this._data.xx`的核心，它吧`this.xxx`代理到了`this._data.xx`
+
+```js
+export function proxy (target: Object, sourceKey: string, key: string) {
+  // 这里代理了vm._data.xxx
+  sharedPropertyDefinition.get = function proxyGetter () {
+    return this[sourceKey][key]
+  }
+  sharedPropertyDefinition.set = function proxySetter (val) {
+    this[sourceKey][key] = val
+  }
+  // 这块代理了 vm.key.xxx
+  Object.defineProperty(target, key, sharedPropertyDefinition)
+}
+```
+
