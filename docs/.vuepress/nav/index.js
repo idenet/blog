@@ -23,7 +23,14 @@ const vueSidebar = [
   {
     title: 'vue响应式原理',
     collapsable: false,
-    children: ['vueReactive/', 'vueReactive/observer'],
+    children: [
+      'vueReactive/',
+      'vueReactive/observer',
+      'vueReactive/Dep',
+      'vueReactive/Watcher',
+      'vueReactive/scheduler',
+      'vueReactive/others',
+    ],
   },
 ]
 module.exports = {

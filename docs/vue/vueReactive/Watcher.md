@@ -72,6 +72,9 @@ export default class Watcher {
         )
       }
     }
+    // 是否是lazy的，在三种wacher中，computed是true，因为他首次更新，
+    // $wacher可以通过options控制，
+    // 渲染wacher是一定运行的
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -81,10 +84,12 @@ export default class Watcher {
    * Evaluate the getter, and re-collect dependencies.
    */
   get () {
+    // 添加wacher
     pushTarget(this)
     let value
     const vm = this.vm
     try {
+      // 这里的getter是之前的expOrFn函数
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -95,6 +100,7 @@ export default class Watcher {
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
+      // 解除dep的依赖
       if (this.deep) {
         traverse(value)
       }
@@ -165,6 +171,8 @@ export default class Watcher {
    */
   run () {
     if (this.active) {
+      // 初次渲染的wacher.run()，重新调用get，即调用了this.getter.call
+      // 也就是 exorfn
       const value = this.get()
       if (
         value !== this.value ||
@@ -177,6 +185,7 @@ export default class Watcher {
         // set new value
         const oldValue = this.value
         this.value = value
+        // 这里的user是表示用户wacher， cb即用户传的回调函数
         if (this.user) {
           const info = `callback for watcher "${this.expression}"`
           invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info)
