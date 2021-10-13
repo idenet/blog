@@ -32,6 +32,11 @@ const vueSidebar = [
       'vueReactive/others',
     ],
   },
+  {
+    title: 'render过程',
+    collapsable: false,
+    children: ['render/', 'render/render', 'render/createElement'],
+  },
 ]
 module.exports = {
   vueSidebar,
