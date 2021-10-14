@@ -37,6 +37,16 @@ const vueSidebar = [
     collapsable: false,
     children: ['render/', 'render/render', 'render/createElement'],
   },
+  {
+    title: '编译',
+    collapsable: false,
+    children: ['compiler'],
+  },
+  {
+    title: '组件',
+    collapsable: false,
+    children: ['component'],
+  },
 ]
 module.exports = {
   vueSidebar,
