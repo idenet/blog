@@ -77,7 +77,7 @@ options.staticRenderFns = staticRenderFns
 ```js
 const { compile, compileToFunctions } = createCompiler(baseOptions)
 ```
-在`compiler/index.js`中`createCompilerCreator`返回了`ast`、`render`、`staticRenderFns`
+在`compiler/index.js`中`createCompilerCreator`的传入函数`baseCompile`返回了`ast`、`render`、`staticRenderFns`
 
 ```js
 export const createCompiler = createCompilerCreator(function baseCompile (
@@ -95,28 +95,48 @@ export const createCompiler = createCompilerCreator(function baseCompile (
   const code = generate(ast, options)
   return {
     ast,
-    // 渲染函数
+    // 渲染函数 字符串形式
     render: code.render,
     // 静态渲染函数，生成静态 VNode 树
     staticRenderFns: code.staticRenderFns
   }
 })
 ```
-在`createCompilerCreator`中我们可以看到，它是吧用户的options和`baseOptions`合并后
-通过`baseCompile`生成了`compiled`，返回的`compiled`其实就是`compile`
+在`generate`函数中生成`render`和`staticRenderFns`
 
 ```js
+export function generate (
+  ast: ASTElement | void,
+  options: CompilerOptions
+): CodegenResult {
+  const state = new CodegenState(options)
+  // fix #11483, Root level <script> tags should not be rendered.
+  const code = ast ? (ast.tag === 'script' ? 'null' : genElement(ast, state)) : '_c("div")'
+  return {
+    render: `with(this){return ${code}}`,
+    staticRenderFns: state.staticRenderFns
+  }
+}
+```
+
+在`createCompilerCreator`中我们可以看到，它是把用户的options和`baseOptions`合并后
+通过`baseCompile`生成了`compiled`，返回的`compiled`其实就是`compile`
+
+```js {13}
 export function createCompilerCreator (baseCompile: Function): Function {
   return function createCompiler (baseOptions: CompilerOptions) {
     function compile (
       template: string,
       options?: CompilerOptions
     ): CompiledResult {
+      // h合并options
       const finalOptions = Object.create(baseOptions)
    
       finalOptions.warn = warn
 
+      // 返回了compiled， 其中包含render，和staticRenderFns
       const compiled = baseCompile(template.trim(), finalOptions)
+
       if (process.env.NODE_ENV !== 'production') {
         detectErrors(compiled.ast, warn)
       }
@@ -129,6 +149,64 @@ export function createCompilerCreator (baseCompile: Function): Function {
       compile,
       compileToFunctions: createCompileToFunctionFn(compile)
     }
+  }
+}
+```
+
+# 编译的过程
+
+
+[编译过程](https://e0v6qvjc33.feishu.cn/mindnotes/bmncnAjzH9yV41VtMcwuEwOVb6b)
+
+接上面，我们来看`createCompileToFunctionFn`方法，这个方法其实就是运行的核心，整个流程分为了4步，源码中用了很多高阶
+函数非常绕，但是只要`debugger`放到`runtime-with-compiler`中的`$mount`下的`compileToFunctions`方法，
+就很清晰，运行到下面的函数的时候，跟着注释的1234步骤打上断点，就能看的明白
+
+
+::: tip
+看的时候可以略去 AST相关生成和优化
+:::
+
+```js
+export function createCompileToFunctionFn (compile: Function): Function {
+  // 创建了一个空的缓存，不带的原型
+  const cache = Object.create(null)
+
+  return function compileToFunctions (
+    template: string,
+    options?: CompilerOptions,
+    vm?: Component
+  ): CompiledFunctionResult {
+    // 克隆了一个options，
+    options = extend({}, options)
+    // 开发环境使用
+    const warn = options.warn || baseWarn
+    delete options.warn
+
+    // check cache
+    // 1. 读取缓存中的CompiledFunctionResult 对象，如果有直接返回
+    const key = options.delimiters
+      ? String(options.delimiters) + template
+      : template
+    if (cache[key]) {
+      return cache[key]
+    }
+
+    // compile
+    // 2. 把模板编译为编译对象(render, staticReenderFns)，字符串形式的js代码
+    const compiled = compile(template, options)
+
+
+    // turn code into functions
+    const res = {}
+    const fnGenErrors = []
+    // 3. 把字符串代码 转为函数 new Function(code)
+    res.render = createFunction(compiled.render, fnGenErrors)
+    res.staticRenderFns = compiled.staticRenderFns.map(code => {
+      return createFunction(code, fnGenErrors)
+    })
+    // 4. 缓存并返回res对象(render, staticRenderFns方法)
+    return (cache[key] = res)
   }
 }
 ```

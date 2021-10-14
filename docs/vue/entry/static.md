@@ -105,6 +105,7 @@ export function initMixin (Vue: GlobalAPI) {
 ```js
   Vue.extend = function (extendOptions: Object): Function {
     extendOptions = extendOptions || {}
+    // Vue 构造函数
     const Super = this
     const SuperId = Super.cid
 
@@ -117,6 +118,7 @@ export function initMixin (Vue: GlobalAPI) {
     Sub.prototype = Object.create(Super.prototype)
     Sub.prototype.constructor = Sub
     Sub.cid = cid++
+    // 合并options
     Sub.options = mergeOptions(
       Super.options,
       extendOptions
@@ -126,7 +128,7 @@ export function initMixin (Vue: GlobalAPI) {
     // For props and computed properties, we define the proxy getters on
     // the Vue instances at extension time, on the extended prototype. This
     // avoids Object.defineProperty calls for each instance created.
-    // 初始化prop
+    // 初始化子组件
     if (Sub.options.props) {
       initProps(Sub)
     }
@@ -146,6 +148,7 @@ export function initMixin (Vue: GlobalAPI) {
       Sub[type] = Super[type]
     })
     // enable recursive self-lookup
+    // 把组件构造函数保存到Ctor.options.components.com = Ctor
     if (name) {
       Sub.options.components[name] = Sub
     }
@@ -158,6 +161,7 @@ export function initMixin (Vue: GlobalAPI) {
     Sub.sealedOptions = extend({}, Sub.options)
 
     // cache constructor
+    // 把 组件的构造函数缓存到 options._Ctor上
     cachedCtors[SuperId] = Sub
     return Sub
   }
