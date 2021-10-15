@@ -19,7 +19,7 @@ module.exports = {
     nav: [
       {
         text: 'Vue源码分析',
-        link: '/vue/vue-router/',
+        link: '/vue/reactive/',
       },
     ],
     sidebar: {

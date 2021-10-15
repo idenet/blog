@@ -4,7 +4,7 @@ lang: zh-CN
 heroText: A  Personal Blog
 heroImage: /logo.jpg
 actionText: 开始 →
-actionLink: /vue/vue-router/
+actionLink: /vue/reactive/
 features:
 - title: A Blog
   details: 学习

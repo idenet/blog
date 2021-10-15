@@ -1,10 +1,5 @@
 const vueSidebar = [
   {
-    title: 'vue-router',
-    collapsable: false,
-    children: ['vue-router/'],
-  },
-  {
     title: '手写的简易响应式vue',
     collapsable: false,
     children: ['reactive/'],
@@ -40,12 +35,17 @@ const vueSidebar = [
   {
     title: '编译',
     collapsable: false,
-    children: ['compiler'],
+    children: ['compiler/'],
   },
   {
     title: '组件',
     collapsable: false,
-    children: ['component'],
+    children: ['component/'],
+  },
+  {
+    title: 'vue-router',
+    collapsable: false,
+    children: ['vue-router/'],
   },
 ]
 module.exports = {
