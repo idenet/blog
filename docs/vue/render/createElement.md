@@ -127,6 +127,7 @@ xport function _createElement (
     const prevEl = vm.$el
     // 获得vm上的vnode
     const prevVnode = vm._vnode
+    // 存储当前的vm实例，也就是父组件
     const restoreActiveInstance = setActiveInstance(vm)
     vm._vnode = vnode
     // Vue.prototype.__patch__ is injected in entry points
@@ -140,6 +141,7 @@ xport function _createElement (
       // updates
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
+    // 将实例复原
     restoreActiveInstance()
     // update __vue__ reference
     if (prevEl) {
