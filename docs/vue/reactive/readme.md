@@ -105,7 +105,7 @@ dep.notify()
   - 负责调用observer监听data中的所有属性变化
   - 负责调用compiler解析指令和差值表达式
 
-<<< @/docs/vue/reactive/js/minivue.js
+@[code js](../reactive/js/minivue.js)
 
 ### observer.js
 
@@ -115,8 +115,7 @@ dep.notify()
   - 数据变化发送通知
 
 
-<<< @/docs/vue/reactive/js/observer.js
-
+@[code js](../reactive/js/observer.js)
 ### compiler
 
 - 功能
@@ -124,8 +123,7 @@ dep.notify()
   - 负责页面的首次渲染
   - 当数据变化后重新渲染视图
 
-<<< @/docs/vue/reactive/js/compiler.js
-
+@[code js](../reactive/js/compiler.js)
 ### Dep
 - 功能
   - 依赖收集、添加观察者
@@ -133,8 +131,7 @@ dep.notify()
 
 ![dep](../../images/3.png)
 
-<<< @/docs/vue/reactive/js/Dep.js
-
+@[code js](../reactive/js/Dep.js)
 
 ### watcher
 
@@ -144,7 +141,7 @@ dep.notify()
 
 ![watch](../../images/4.png)
 
-<<< @/docs/vue/reactive/js/watcher.js
+@[code js](../reactive/js/watcher.js)
 
 ### 整体流程
 

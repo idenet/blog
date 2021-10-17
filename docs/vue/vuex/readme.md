@@ -7,4 +7,4 @@
 
 ## 使用Vue.use()模拟vuex
 
-<<< @/docs/vue/vuex/vuex.js
+@[code js](./vuex.js)
