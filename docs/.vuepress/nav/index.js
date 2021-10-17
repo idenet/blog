@@ -47,6 +47,11 @@ const vueSidebar = [
     collapsable: false,
     children: ['vue-router/'],
   },
+  {
+    title: 'vuex',
+    collapsable: false,
+    children: ['vuex/'],
+  },
 ]
 module.exports = {
   vueSidebar,
