@@ -19,7 +19,7 @@ export default defineUserConfig({
     ['meta', { name: 'theme-color', content: '#3eaf7c' }],
     [
       'link',
-      { rel: 'shortcut icon', type: 'image/x-icon', href: '/favicon.ico' },
+      { rel: 'shortcut icon', type: 'image/x-icon', href: '/blog/favicon.ico' },
     ],
     ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
     [
