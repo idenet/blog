@@ -20,3 +20,4 @@
 
 # Nuxt
 基于vue的同构渲染库
+gituhbaction 测试自动部署
