@@ -153,3 +153,99 @@ const app = new Vue({
 `express`将数据作为字符串返回了，但是代码中没有客户端的js，所以不能实现动态功能。需要一个客户端的入口文件，
 将服务端渲染好的页面激活成动态的客户端Vue页面
 
+
+![构建过程](../../images/ssr/1.png)
+
+## 使用webpack的源码构建
+
+通过`webpack`我们将需要的代码打包进客户端和服务端，项目的基本结构如下
+
+```
+src
+├── components
+│   ├── Foo.vue
+│   ├── Bar.vue
+│   └── Baz.vue
+├── App.vue
+├── app.js # 通用 entry(universal entry)
+├── entry-client.js # 仅运行于浏览器
+└── entry-server.js # 仅运行于服务器
+```
+`app.js`使我们应用程序的通用`entry`，在纯客户端中，我们将此文件创建根实例并挂载到dom。但是对于ssr我们需要
+导出一个`createapp`作为实例来给客户端和服务端入口使用
+```js
+import Vue from 'vue'
+import App from './App.vue'
+
+// 导出一个工厂函数，用于创建新的
+// 应用程序、router 和 store 实例
+export function createApp () {
+  const app = new Vue({
+    // 根实例简单的渲染应用程序组件。
+    render: h => h(App)
+  })
+  return { app }
+
+```
+`entry-client.js`客户端只要挂载到dom
+
+```js
+import { createApp } from './app'
+
+// 客户端特定引导逻辑……
+
+const { app } = createApp()
+
+// 这里假定 App.vue 模板中根元素具有 `id="app"`
+app.$mount('#app')
+```
+`entry-server.js`服务端导出的vue，在这里我们要处理数据和路由，但是现在只需要先导出
+```js
+import { createApp } from './app'
+
+export default context => {
+  const { app } = createApp()
+  return app
+}
+```
+**注意在vue模板文件`app.vue`中，跟标签需要添加`id=app`，这个是用来在客户端挂载dom的**
+
+## 构建配置
+
+### 安装依赖
+
+- 安装生产依赖
+
+```js
+npm i vue vue-server-renderer express cross-env
+```
+
+
+| 包                  | 说明                                |
+| ------------------- | ----------------------------------- |
+| vue                 | Vue.js核心库                        |
+| vue-server-renderer | Vue服务端渲染工具                   |
+| express             | 基于Node的web服务框架               |
+| cross-env           | 通过npm script 设置跨平台的环境变量 |
+
+- 安装开发依赖
+
+```js
+npm i -D webpack webpack-cli webpack-merge webpack-node-externals @babel/core
+@babel/plugin-transform-runtime @babel/preset-env babel-loader css-loader 
+url-loader file-loader rimraf vue-loader vue-template-compiler friendly-errors-webpack-plugin
+```
+| 包                                                                             | 说明                                   |
+| ------------------------------------------------------------------------------ | -------------------------------------- |
+| webpack-merge                                                                  | webpack 配置信息合并工具               |
+| webpack-cli                                                                    | webpack 的命令行工具                   |
+| webpack4                                                                       | webpack 核心包                         |
+| vue-template-compiler vue-loader                                               | 处理 .vue 资源                         |
+| rimraf                                                                         | 基于 Node 封装的一个跨平台 rm -rf 工具 |
+| friendly-errors-webpack-plugin                                                 | 友好的 webpack 错误提示                |
+| file-loader                                                                    | 处理字体资源   在webpack4中需要        |
+| url-loader                                                                     | 处理图片资源     在webpack4中需要      |
+| css-loader                                                                     | 处理 CSS 资源                          |
+| babel-loader  @babel/preset-env  @babel/plugin-transform-runtime   @babel/core | Babel 相关工具                         |
+
+**因为升级到了webpack5，上面的字体和css相关处理在webpack5中已经内置，friendly-errors-webpack-plugin不支持webpack5**
