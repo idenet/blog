@@ -171,44 +171,6 @@ src
 ├── entry-client.js # 仅运行于浏览器
 └── entry-server.js # 仅运行于服务器
 ```
-`app.js`使我们应用程序的通用`entry`，在纯客户端中，我们将此文件创建根实例并挂载到dom。但是对于ssr我们需要
-导出一个`createapp`作为实例来给客户端和服务端入口使用
-```js
-import Vue from 'vue'
-import App from './App.vue'
-
-// 导出一个工厂函数，用于创建新的
-// 应用程序、router 和 store 实例
-export function createApp () {
-  const app = new Vue({
-    // 根实例简单的渲染应用程序组件。
-    render: h => h(App)
-  })
-  return { app }
-
-```
-`entry-client.js`客户端只要挂载到dom
-
-```js
-import { createApp } from './app'
-
-// 客户端特定引导逻辑……
-
-const { app } = createApp()
-
-// 这里假定 App.vue 模板中根元素具有 `id="app"`
-app.$mount('#app')
-```
-`entry-server.js`服务端导出的vue，在这里我们要处理数据和路由，但是现在只需要先导出
-```js
-import { createApp } from './app'
-
-export default context => {
-  const { app } = createApp()
-  return app
-}
-```
-**注意在vue模板文件`app.vue`中，跟标签需要添加`id=app`，这个是用来在客户端挂载dom的**
 
 ## 构建配置
 
@@ -249,3 +211,246 @@ url-loader file-loader rimraf vue-loader vue-template-compiler friendly-errors-w
 | babel-loader  @babel/preset-env  @babel/plugin-transform-runtime   @babel/core | Babel 相关工具                         |
 
 **因为升级到了webpack5，上面的字体和css相关处理在webpack5中已经内置，friendly-errors-webpack-plugin不支持webpack5**
+
+### webpack配置
+
+初始化打包配置
+```js
+build
+├── webpack.base.config.js # 公共配置
+├── webpack.client.config.js # 客户端打包配置文件
+└── webpack.server.config.js # 服务端打包配置文件
+```
+`webpack.base.config.js`
+
+```js
+const VueLoaderPlugin = require('vue-loader/lib/plugin-webpack5')
+// webpack5下的友好报错要使用这个
+const FriendlyErrorsWebpackPlugin = require('@soda/friendly-errors-webpack-plugin')
+const path = require('path')
+// const FriendlyErrorsWebpackPlugin = require('friendly-errors-webpack-plugin')
+const resolve = (file) => path.resolve(__dirname, file)
+const isProd = process.env.NODE_ENV === 'production'
+module.exports = {
+  mode: isProd ? 'production' : 'development',
+  output: {
+    path: resolve('../dist/'),
+    publicPath: '/dist/',
+    filename: '[name].[chunkhash].js',
+  },
+  resolve: {
+    alias: {
+      // 路径别名，@ 指向 src
+      '@': resolve('../src/'),
+    },
+    // 可以省略的扩展名
+    // 当省略扩展名的时候，按照从前往后的顺序依次解析
+    extensions: ['.js', '.vue', '.json'],
+  },
+  devtool: isProd ? 'source-map' : 'cheap-module-eval-source-map',
+  module: {
+    rules: [
+      // 处理图片资源
+      {
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        // 在webpack4中这么使用
+        // use: [
+        //   {
+        //     loader: 'url-loader',
+        //     options: {
+        //       limit: 8192,
+        //     },
+        //   },
+        // ],
+        // webpack 5中内置了资源处理模块
+        type: 'asset/resource',
+      },
+      // 处理字体资源
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/,
+        // 字体文件同理
+        // use: ['file-loader'],
+        type: 'asset/resource',
+      },
+      // 处理 .vue 资源
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader',
+      },
+      // 处理 CSS 资源
+      // 它会应用到普通的 `.css` 文件
+      // 以及 `.vue` 文件中的 `<style>` 块
+      {
+        test: /\.css$/,
+        use: ['vue-style-loader', 'css-loader'],
+      },
+      // CSS 预处理器，参考：https://vue-loader.vuejs.org/zh/guide/preprocessors.html
+      // 例如处理 Less 资源
+      // {
+      // test: /\.less$/,
+      // use: [
+      // 'vue-style-loader',
+      // 'css-loader',
+      // 'less-loader'
+      // ]
+      // },
+    ],
+  },
+  plugins: [new VueLoaderPlugin(), new FriendlyErrorsWebpackPlugin()],
+}
+
+```
+`webpack.client.config.js`服务端的webpack配置
+
+```js
+/**
+ * 客户端打包配置
+ */
+const { merge } = require('webpack-merge')
+const baseConfig = require('./webpack.base.config.js')
+// 重要的客户端配置输出插件
+const VueSSRClientPlugin = require('vue-server-renderer/client-plugin')
+module.exports = merge(baseConfig, {
+  entry: {
+    app: './src/entry-client.js',
+  },
+  module: {
+    rules: [
+      // ES6 转 ES5
+      {
+        test: /\.m?js$/,
+        exclude: /(node_modules|bower_components)/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env'],
+            cacheDirectory: true,
+            plugins: ['@babel/plugin-transform-runtime'],
+          },
+        },
+      },
+    ],
+  },
+  // 重要信息：这将 webpack 运行时分离到一个引导 chunk 中，
+  // 以便可以在之后正确注入异步 chunk。
+  optimization: {
+    splitChunks: {
+      name: 'manifest',
+      minChunks: Infinity,
+    },
+  },
+  plugins: [
+    // 此插件在输出目录中生成 `vue-ssr-client-manifest.json`。
+    new VueSSRClientPlugin(),
+  ],
+})
+
+```
+`webpack.server.config.js`服务端配置
+
+```js
+/**
+ * 服务端打包配置
+ */
+const { merge } = require('webpack-merge')
+const nodeExternals = require('webpack-node-externals')
+const baseConfig = require('./webpack.base.config.js')
+const VueSSRServerPlugin = require('vue-server-renderer/server-plugin')
+module.exports = merge(baseConfig, {
+  // 将 entry 指向应用程序的 server entry 文件
+  entry: './src/entry-server.js',
+  // 这允许 webpack 以 Node 适用方式处理模块加载
+  // 并且还会在编译 Vue 组件时，
+  // 告知 `vue-loader` 输送面向服务器代码(server-oriented code)。
+  target: 'node',
+  output: {
+    filename: 'server-bundle.js',
+    // 此处告知 server bundle 使用 Node 风格导出模块(Node-style exports)
+    libraryTarget: 'commonjs2',
+  },
+  // 不打包 node_modules 第三方包，而是保留 require 方式直接加载
+  externals: [
+    nodeExternals({
+      // 白名单中的资源依然正常打包
+      allowlist: [/\.css$/],
+    }),
+  ],
+  plugins: [
+    // 这是将服务器的整个输出构建为单个 JSON 文件的插件。
+    // 默认文件名为 `vue-ssr-server-bundle.json`
+    new VueSSRServerPlugin(),
+  ],
+})
+```
+最后改造`server.js`引入服务端和客户端配置
+
+```js
+const Vue = require('vue')
+const express = require('express')
+const fs = require('fs')
+
+const serverBundle = require('./dist/vue-ssr-server-bundle.json')
+const clientManifest = require('./dist/vue-ssr-client-manifest.json')
+const template = fs.readFileSync('./index.template.html', 'utf-8')
+
+const renderer = require('vue-server-renderer').createBundleRenderer(
+  serverBundle,
+  {
+    template,
+    clientManifest,
+  }
+)
+
+const server = express()
+
+//请求静态资源
+server.use('/dist', express.static('./dist'))
+
+server.get('/', (req, res) => {
+  renderer.renderToString(
+    {
+      title: '拉钩教育',
+      meta: '<meta name="description" content="拉钩教育" />',
+    },
+    (err, html) => {
+      if (err) {
+        return res.status(500).end('服务器出错')
+      }
+      // 设置请求头
+      res.end(html)
+    }
+  )
+})
+
+server.listen(3000, () => {
+  console.log('server running at 3000')
+})
+```
+```html
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {{{meta}}}
+  <title>{{title}}</title>
+</head>
+
+<body>
+  <!-- 需要这个注释来告知App.vue的输出位置 -->
+  <!--vue-ssr-outlet-->
+</body>
+
+</html>
+```
+这样一个最基本的不包含路由的vue同构渲染就完成了。
+
+`https://github.com/idenet/vue-ssr`所有代码在这里，切换到`init`查看最基础的代码。现在我们可以总结整体流程。
+从`node server.js`调用开始，我们在浏览器输入`localhost:3000`调用了`server`路由，在路由中调用了`renderer.renderToString()`，
+将代码渲染到客户端，查看引入的
+```js
+const serverBundle = require('./dist/vue-ssr-server-bundle.json')
+const clientManifest = require('./dist/vue-ssr-client-manifest.json')
+```
+两个json文件我们发现，之前的app.js和app.vue代码都已经打包进了，json文件中
+
+### 开发模式构建
