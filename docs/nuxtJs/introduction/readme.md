@@ -454,3 +454,130 @@ const clientManifest = require('./dist/vue-ssr-client-manifest.json')
 两个json文件我们发现，之前的app.js和app.vue代码都已经打包进了，json文件中
 
 ### 开发模式构建
+
+在完成基础的宏能以后，我们给开发状态，添加文件修改的监听刷新功能和热更新功能，主要使用了`webpack-dev-middleware`和`webpack-hot-middleware`
+直接看代码，在`server.js`中，我们加入了一个`setupDevServer`方法，回调执行了`createBundleRenderer`去生成render，在这个回调中，去编写热更新
+注意`onReady`返回的是一个promise，为什么看下面
+
+```js
+let renderer
+let onReady
+
+if (isPord) {
+  const serverBundle = require('./dist/vue-ssr-server-bundle.json')
+  const clientManifest = require('./dist/vue-ssr-client-manifest.json')
+  const template = fs.readFileSync('./index.template.html', 'utf-8')
+
+  renderer = createBundleRenderer(serverBundle, {
+    template,
+    clientManifest,
+  })
+} else {
+  // 开发模式 --> 监视打包构建 --> 重新生成 Renderer渲染器
+  onReady = setupDevServer(server, (serverBundle, template, clientManifest) => {
+    renderer = createBundleRenderer(serverBundle, {
+      template,
+      clientManifest,
+    })
+  })
+}
+
+server.get(
+  '/',
+  isPord
+    ? render
+    : async (req, res) => {
+        // 等待有了 renderer渲染器以后，调用render进行渲染
+        await onReady
+        render(req, res)
+      }
+)
+
+```
+`setupDevServer`返回了一个`Promise`，在`update`的时候，等待`template`、`serverbundle`、
+`clientmanifest`返回以后执行回调，其中做了监听相关的工作。这里注意关于`devMiddleware`的使用和4不同
+```js
+const fs = require('fs')
+const path = require('path')
+const chokidar = require('chokidar')
+const webpack = require('webpack')
+const devMiddleware = require('webpack-dev-middleware')
+const hotMiddleware = require('webpack-hot-middleware')
+
+const resolve = (file) => path.resolve(__dirname, file)
+
+module.exports = (server, callback) => {
+  let ready
+  const onReady = new Promise((r) => (ready = r))
+
+  // 监事构建  -> 更新renderer
+  let template
+  let serverBundle
+  let clientManifest
+
+  const update = () => {
+    if (template && serverBundle && clientManifest) {
+      ready()
+      callback(serverBundle, template, clientManifest)
+    }
+  }
+  // 监视构建 template -> 调用 update -> 更新renderer渲染器
+  const templatePath = path.resolve(__dirname, '../index.template.html')
+  template = fs.readFileSync(templatePath, 'utf-8')
+  update()
+  // chokidar
+  chokidar.watch(templatePath).on('change', () => {
+    template = fs.readFileSync(templatePath, 'utf-8')
+    update()
+  })
+
+  // 监视构建
+  const serverConfig = require('./webpack.server.config')
+  const serverCompiler = webpack(serverConfig)
+  const serverDevMiddleware = devMiddleware(serverCompiler, {
+    stats: false, // 关闭日志输出，由 FriendlyErrorsWebpackPlugin 处理
+  })
+  serverCompiler.hooks.done.tap('server', () => {
+    serverBundle = JSON.parse(
+      serverDevMiddleware.context.outputFileSystem.readFileSync(
+        resolve('../dist/vue-ssr-server-bundle.json'),
+        'utf-8'
+      )
+    )
+    update()
+  })
+  // 构建mainfest
+  const clientConfig = require('./webpack.client.config')
+  clientConfig.plugins.push(new webpack.HotModuleReplacementPlugin())
+  clientConfig.entry.app = [
+    'webpack-hot-middleware/client?quiet=true&reload=true', // 和服务端交互处理热更新一个客户端脚本
+    clientConfig.entry.app,
+  ]
+
+  const clientCompiler = webpack(clientConfig)
+  const clientDevMiddleware = devMiddleware(clientCompiler, {
+    publicPath: clientConfig.output.publicPath,
+    stats: false, // 关闭日志输出，由 FriendlyErrorsWebpackPlugin 处理
+  })
+  clientCompiler.hooks.done.tap('client', () => {
+    clientManifest = JSON.parse(
+      clientDevMiddleware.context.outputFileSystem.readFileSync(
+        resolve('../dist/vue-ssr-client-manifest.json'),
+        'utf-8'
+      )
+    )
+    update()
+  })
+
+  server.use(
+    hotMiddleware(clientCompiler, {
+      log: false,
+    })
+  )
+  // 重要！！ 将devmiddleware挂载到express服务中，提供对其内部内存中数据的访问
+  server.use(clientDevMiddleware)
+
+  return onReady
+}
+
+```
