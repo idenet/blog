@@ -4,8 +4,8 @@ name: GitHub Actions Build and Deploy
 # 触发条件: push 到 master 分支后
 on:
   push:
-    tags:
-      - v*
+    branches:
+      - master
 
 # 设置上海时区
 env:
