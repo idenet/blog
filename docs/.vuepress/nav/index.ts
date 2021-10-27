@@ -49,6 +49,10 @@ const vueSidebar = {
       text: 'vuex',
       children: ['/vue/vuex/'],
     },
+    {
+      text: 'vue-ssr的搭建',
+      children: ['/vue/vueSSR/'],
+    },
   ],
 }
 module.exports = {

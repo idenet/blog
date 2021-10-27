@@ -23,6 +23,16 @@ vue SSR是vue官方提供的一个服务端渲染解决方案。在学习中使�
 
 # VueSSR的基本使用
 
+完整代码在这里：
+
+```js
+git clone https://github.com/idenet/vue-ssr
+
+yarn
+
+npm run dev/npm run build
+```
+
 ## 渲染一个vue实例
 
 基于官方的第一个示例，我们动手操作一下
@@ -581,4 +591,93 @@ module.exports = (server, callback) => {
 }
 
 ```
-## 路由处理
+## 路由处理和异步数据请求
+
+路由有同步的和异步的，异步的处理要通过`promise`。给`app.js`加上路由和store的导出
+
+```js
+export function createApp() {
+  const router = createRouter()
+  const store = createStore()
+
+  const app = new Vue({
+    router, // 把路由实例挂载到 Vue 根实例中
+    store,
+    // 根实例简单的渲染应用程序组件。
+    render: (h) => h(App),
+  })
+  return { app, router, store }
+}
+```
+`entry-server.js`
+
+```js
+export default async (context) => {
+  // 因为有可能会是异步路由钩子函数或组件，所以我们将返回一个 Promise，
+  // 以便服务器能够等待所有的内容在渲染前，
+  // 就已经准备就绪。
+  const { app, router, store } = createApp()
+
+  const meta = app.$meta()
+
+  // 设置服务器端 router 的位置
+  router.push(context.url)
+
+  // 等到 router 将可能的异步组件和钩子函数解析完
+  // new Promise((resolve, reject) => {
+  //   router.onReady(resolve, reject)
+  // })
+  await new Promise(router.onReady.bind(router))
+
+  context.rendered = () => {
+    // renderer 会把 context.state数据对象内联到页面中
+    context.state = store.state
+  }
+
+  return app
+}
+
+```
+`entry-client.js`。这里的`__INITIAL_STATE__`是`vue-ssr`挂载到window的数据，通过这个来让服务端store和客户端store
+数据保持一致
+```js
+// 客户端特定引导逻辑……
+
+const { app, router, store } = createApp()
+
+if (window.__INITIAL_STATE__) {
+  store.replaceState(window.__INITIAL_STATE__)
+}
+
+// 这里假定 App.vue 模板中根元素具有 `id="app"`
+router.onReady(() => {
+  app.$mount('#app')
+})
+```
+同理`server`的改动
+```js
+const render = async (req, res) => {
+  try {
+    const html = await renderer.renderToString({
+      title: '拉钩教育',
+      meta: '<meta name="description" content="拉钩教育" />',
+      url: req.url,
+    })
+    // 设置请求头
+    res.end(html)
+  } catch (error) {
+    res.status(500).end('服务器出错')
+  }
+}
+
+server.get(
+  '*',
+  isPord
+    ? render
+    : async (req, res) => {
+        // 等待有了 renderer渲染器以后，调用render进行渲染
+        await onReady
+        render(req, res)
+      }
+)
+```
