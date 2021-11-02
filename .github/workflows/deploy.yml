@@ -5,7 +5,7 @@ name: GitHub Actions Build and Deploy
 on:
   push:
     branches:
-      - master
+      - write
 
 # 设置上海时区
 env:
