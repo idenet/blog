@@ -1,6 +1,6 @@
 import { defineUserConfig } from 'vuepress'
-const nav = require('./nav/index')
-const { vueSidebar } = nav
+// const nav = require('./nav/index')
+import { vueSidebar } from './nav'
 
 export default defineUserConfig({
   title: '王泽斌',
@@ -36,6 +36,10 @@ export default defineUserConfig({
       {
         text: 'Vue源码分析',
         link: '/vue/reactive/',
+      },
+      {
+        text: 'vue-next',
+        link: '/vue-next/reactive/',
       },
     ],
     sidebar: {

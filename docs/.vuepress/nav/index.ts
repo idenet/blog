@@ -1,4 +1,4 @@
-const vueSidebar = {
+export const vueSidebar = {
   '/vue/': [
     {
       text: '手写的简易响应式vue',
@@ -54,7 +54,10 @@ const vueSidebar = {
       children: ['/vue/vueSSR/'],
     },
   ],
-}
-module.exports = {
-  vueSidebar,
+  '/vue-next/': [
+    {
+      text: '手写简易响应式vue-next',
+      children: ['/vue-next/reactive/'],
+    },
+  ],
 }
