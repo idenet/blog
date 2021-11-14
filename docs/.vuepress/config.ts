@@ -41,6 +41,10 @@ export default defineUserConfig({
         text: 'vue-next',
         link: '/vue-next/reactive/',
       },
+       {
+        text: 'React',
+        link: '/react/tinyReact/',
+      },
     ],
     sidebar: {
       ...vueSidebar,
