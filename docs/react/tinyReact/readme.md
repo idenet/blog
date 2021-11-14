@@ -1,4 +1,4 @@
-# 准备工作
+# TinyReact
 
 从创建一个微小的 react 来了解`virtualDOM`的的渲染流程。所有的代码可以在
 [这里](https://github.com/idenet/tiny-react)可以看到，`master`是所有实现，`init`是未实现的`tempalte`
