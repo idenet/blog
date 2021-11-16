@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .playground {
+      background: palevioletred;
+      padding: 20px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="playground" id="play">playground</div>
+  <button id="work">start work</button>
+  <button id="interaction">handle some user interaction</button>
+  <script>
+    var play = document.getElementById("play")
+    var workBtn = document.getElementById("work")
+    var interactionBtn = document.getElementById("interaction")
+    var iterationCount = 100000000
+    var value = 0
+
+    var expensiveCalculation = function (IdleDeadline) {
+      while (iterationCount > 0 && IdleDeadline.timeRemaining() > 1) {
+        value =
+          Math.random() < 0.5 ? value + Math.random() : value + Math.random()
+        iterationCount = iterationCount - 1
+        console.log(value)
+      }
+      requestIdleCallback(expensiveCalculation)
+    }
+
+    workBtn.addEventListener("click", function () {
+      requestIdleCallback(expensiveCalculation)
+    })
+
+    interactionBtn.addEventListener("click", function () {
+      play.style.background = "palegreen"
+    })
+  </script>
+</body>
+
+</html>
