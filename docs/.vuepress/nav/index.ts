@@ -60,7 +60,7 @@ export const vueSidebar = {
       children: ['/vue-next/reactive/'],
     },
   ],
-    '/react/': [
+  '/react/': [
     {
       text: 'tiny-react',
       children: ['/react/tinyReact/'],
@@ -68,6 +68,12 @@ export const vueSidebar = {
     {
       text: 'fiber',
       children: ['/react/fiber/'],
+    },
+  ],
+  '/micro-front/': [
+    {
+      text: '介绍',
+      children: ['/micro-front/intro/'],
     },
   ],
 }
