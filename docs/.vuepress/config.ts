@@ -49,6 +49,10 @@ export default defineUserConfig({
         text: '微前端',
         link: '/micro-front/intro/',
       },
+      {
+        text: '前端测试',
+        link: '/front-test/intro/',
+      },
     ],
     sidebar: {
       ...vueSidebar,
