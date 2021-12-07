@@ -185,3 +185,63 @@ BDD（Behavior-driven development）行为驱动开发，是测试驱动开发�
 
 **但是如果测试编写与维护的时间长于它们可以节省的时间，那么你根本不应该编写测试。** 当然，在编写代码之前你很难知道通过测试可以节省多少时间，你会随着时间的推移去了解。但是，假设你 **正在一个短期项目中创建原型，或者是在一个创业公司迭代一个想法，那你可能不会从编写测试中获得收益。**
 
+# vue中的测试
+
+在使用 `@vue/cli`创建项目的时候，只要选择 `unit code`我们就能创建单元测试。这时候运行 `npm run test：unit`就能看到默认的测试成功的信息。
+
+## Jest 默认配置
+
+通过配置可以很清晰的看到，会测试什么，使用什么测试
+
+```js
+// node_modules/@vue/cli-plugin-unit-jest/presets/default/jest-preset.js
+module.exports = {
+  moduleFileExtensions: [ // 可以省略的模块扩展名
+    'js',
+    'jsx',
+    'json',
+    // tell Jest to handle *.vue files
+    'vue'
+  ],
+  transform: { // 模块转换器
+    // process *.vue files with vue-jest
+    '^.+\\.vue$': require.resolve('vue-jest'), // .vue 模块使用 vue-jest 转换
+    '.+\\.(css|styl|less|sass|scss|svg|png|jpg|ttf|woff|woff2)$':
+    require.resolve('jest-transform-stub'), // css 等模块使用 jest-transform-stub 转换为字符串
+    '^.+\\.jsx?$': require.resolve('babel-jest') // .jsx 模块使用 babel-jest 转换
+  },
+  transformIgnorePatterns: ['/node_modules/'], // 不转换第三方包资源模块
+  // support the same @ -> src alias mapping in source code
+  // 支持模块加载路径中的 @ 别名
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1'
+  },
+  // 测试环境，Jest中的默认环境是通过jsdom的类似于浏览器的环境
+  // 如果要构建 node 应用，则可以使用 node 选项来使用类似 node 的环境。
+  // 通过在文件顶部添加 @jest-environment docblock，可以在该文件中指定另一个用于所有测试的环境
+  testEnvironment: 'jest-environment-jsdom-fifteen',
+  // serializer for snapshots
+  
+  // 序列化快照
+  // 对 .vue 组件进行快照测试，快照存储为一个文件，文件内容需要格式化，这里使用 jest-serializer-vue 进行格式化处理
+  snapshotSerializers: [
+    'jest-serializer-vue'
+  ],
+  
+  // 要测试的文件路径
+  testMatch: [
+    '**/tests/unit/**/*.spec.[jt]s?(x)',
+    '**/__tests__/*.[jt]s?(x)'
+  ],
+  // 测试的浏览器环境地址
+  // https://github.com/facebook/jest/issues/6766
+  testURL: 'http://localhost/',
+  
+  // 监视运行测试的插件工具
+  watchPlugins: [
+    // 在监视模式下，为 p 方式筛选文件提供交互式选择文件功能
+    require.resolve('jest-watch-typeahead/filename'),
+    require.resolve('jest-watch-typeahead/testname')
+  ]
+}
+```
