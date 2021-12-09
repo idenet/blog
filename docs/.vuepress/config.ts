@@ -3,8 +3,8 @@ import { defineUserConfig } from 'vuepress'
 import { vueSidebar } from './nav'
 
 export default defineUserConfig({
-  title: '王文武',
-  description: '王文武的学习记录',
+  title: '斌',
+  description: '斌的学习记录',
   dest: './dist',
   lang: 'zh-CN',
   base: '/blog/',
@@ -49,9 +49,13 @@ export default defineUserConfig({
         text: '微前端',
         link: '/micro-front/intro/',
       },
+      // {
+      //   text: '前端测试',
+      //   link: '/front-test/intro/',
+      // },
       {
-        text: '前端测试',
-        link: '/front-test/intro/',
+        text: '性能优化',
+        link: '/performance/intro/',
       },
     ],
     sidebar: {
