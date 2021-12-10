@@ -55,7 +55,7 @@ export default defineUserConfig({
       // },
       {
         text: '性能优化',
-        link: '/performance/intro/',
+        link: '/performance/',
       },
     ],
     sidebar: {

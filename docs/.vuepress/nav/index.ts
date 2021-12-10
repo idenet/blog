@@ -85,7 +85,7 @@ export const vueSidebar = {
   '/performance/': [
     {
       text: '性能优化',
-      children: ['/performance/intro/']
+      children: ['/performance/', '/performance/lifecycle']
     },
   ],
 }
