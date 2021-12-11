@@ -3,8 +3,8 @@ import { defineUserConfig } from 'vuepress'
 import { vueSidebar } from './nav'
 
 export default defineUserConfig({
-  title: '王泽斌',
-  description: '王泽斌的学习记录',
+  title: '王文武',
+  description: '王文武的学习记录',
   dest: './dist',
   lang: 'zh-CN',
   base: '/blog/',
