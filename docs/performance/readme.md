@@ -33,11 +33,11 @@ web性能是网站或者网站应用程序的客观度量和可感知的用户�
 2020年google提出的侧重于用户体验的三个方面 **加载性能、交互性、视觉稳定性**三个方面
 并提供了以下阈值
 
-- First Contentful Paint (FCP): 首**次绘制内容，浏览器首次绘制来自dom的内容的时间**，这里只要显示内容了，就算绘制完成
+- First Contentful Paint (FCP): **首次绘制内容，浏览器首次绘制来自dom的内容的时间**，这里只要显示内容了，就算绘制完成
 - Largest Contentful Paint (LCP)：**最大内容绘制**，测量加载性能，LCP应在页面首次开始加载后的2.5s内发生
 - First Input Delay (FID)：**首次输入延迟，测量交互性**。页面的fid应为100毫秒或更短
 - Time to Interactive (TTI): 表示网页第一次达到**完全可交互状态**的时间点，浏览器已经可以持续性的响应用户输入
-- Total Blocking Time (TBT): 总阻塞时间，度量 FCP 和 TTI 之间的总时间，即用户操作后到相应之间的时间
+- Total Blocking Time (TBT): 总阻塞时间，度量 FCP 和 TTI 之间的总时间，即用户操作后到响应之间的时间
 - Cumulative Layout Shift (CLS)：**积累布局偏倚，测量视觉稳定性**。页面的cls应保持在0.1或者更少
 
 ### 渲染流程
