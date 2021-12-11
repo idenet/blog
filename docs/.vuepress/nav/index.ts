@@ -76,4 +76,16 @@ export const vueSidebar = {
       children: ['/micro-front/intro/'],
     },
   ],
+  '/front-test/': [
+    {
+      text: '前端测试',
+      children: ['/front-test/intro/'],
+    },
+  ],
+  '/performance/': [
+    {
+      text: '性能优化',
+      children: ['/performance/', '/performance/lifecycle']
+    },
+  ],
 }
