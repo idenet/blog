@@ -46,6 +46,10 @@ export default defineUserConfig({
         link: '/react/tinyReact/',
       },
       {
+        text: 'typescript',
+        link: '/ts/challenge/'
+      },
+      {
         text: '微前端',
         link: '/micro-front/intro/',
       },

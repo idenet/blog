@@ -88,4 +88,10 @@ export const vueSidebar = {
       children: ['/performance/', '/performance/lifecycle']
     },
   ],
+  '/ts/': [
+    {
+      text: '类型挑战',
+      children: ['/ts/challenge']
+    }
+  ]
 }
