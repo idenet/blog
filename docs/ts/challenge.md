@@ -65,3 +65,17 @@ type MyReadonly<T> = {
 解析
 
 获取 T 的 key值，循环然后给key 添加 `readonly`
+
+## 元祖转换成对象
+
+
+```ts
+// 将元祖转换成对象
+const tuple = ['tesla', 'model 3', 'model X', 'model Y'] as const
+```
+
+```ts
+type TupleToObject<T extends readonly ang[]> = {
+  [key in T[number]]: key
+}
+```
