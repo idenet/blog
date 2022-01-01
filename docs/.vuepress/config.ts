@@ -35,7 +35,7 @@ export default defineUserConfig({
     navbar: [
       {
         text: 'Vue源码分析',
-        link: '/vue/reactive/',
+        link: '/vue/example/',
       },
       {
         text: 'vue-next',

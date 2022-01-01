@@ -1,6 +1,13 @@
 export const vueSidebar = {
   '/vue/': [
     {
+      text: '从一个个例子看vue',
+      children: [
+        '/vue/example/',
+        '/vue/example/computed'
+      ]
+    },
+    {
       text: '手写的简易响应式vue',
       children: ['/vue/reactive/'],
     },

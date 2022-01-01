@@ -75,7 +75,7 @@ const tuple = ['tesla', 'model 3', 'model X', 'model Y'] as const
 ```
 
 ```ts
-type TupleToObject<T extends readonly ang[]> = {
+type TupleToObject<T extends readonly any[]> = {
   [key in T[number]]: key
 }
 ```

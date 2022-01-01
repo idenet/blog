@@ -5,7 +5,7 @@ heroText: A  Personal Blog
 heroImage: /logo.jpg
 actions:
 - text: 开始 →
-  link: /vue/reactive/
+  link: /vue/example/
   type: primary
 features:
 - title: A Blog
