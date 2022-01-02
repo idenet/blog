@@ -99,7 +99,7 @@ function initComputed (vm: Component, computed: Object) {
         vm,
         getter || noop,
         noop,
-        computedWatcherOptions
+        computedWatcherOptions: {lay: true}
       )
     }
 
@@ -461,8 +461,8 @@ evaluate () {
  this.dirty = false
 }
 ```
-可以清晰的看到，这时候我们触发了`this.a`。根据响应式原理，这里我们将触发`data`中早已定义好的拦截器`get`。进行响应式依赖的收集，这里我不详细说明`data`的响应式收集过程了。
-等下一篇文章关于`data`再分析。我们只要知道`a`的`dep`数组中存放了计算`Watcher`。然后把 `dirty = false`。`watcher.evaluate()`执行完成。
+可以清晰的看到，这时候我们触发了`this.a`。根据响应式原理，这里我们将触发`data`中早已定义好的拦截器`get`。进行响应式依赖的收集，将我们的计算`Watcher`, 放到了`dep.subs`中。
+这里我不详细说明`data`的响应式收集过程了。等下一篇文章关于`data`再分析。我们只要知道`a`的`dep`数组中存放了计算`Watcher`。然后把 `dirty = false`。`watcher.evaluate()`执行完成。
 
 ```js
 function () {
