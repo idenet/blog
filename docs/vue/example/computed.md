@@ -4,7 +4,7 @@
 
 **计算属性是基于他们的响应式依赖进行缓存的，只在相关响应式依赖发生改变时它们才会重新求值**
 
-关于上面的功能，我们来看以下例子
+那么如何解析这句话？我们从简单的例子开始
 
 ```html
 <!DOCTYPE html>
@@ -99,7 +99,7 @@ function initComputed (vm: Component, computed: Object) {
         vm,
         getter || noop,
         noop,
-        computedWatcherOptions: {lay: true}
+        computedWatcherOptions
       )
     }
 
@@ -292,17 +292,25 @@ Object.defineProperty(vm, 'compA', {
 这里我们不详细讨论了，因为这块要讲清楚非常长，简要流程就是，运行到渲染`Wacher`的创建的时候
 
 ```js
-updateComponent = () => {
-   // vm._render() --> vm.$createElement -> createElement ---> vnode | createComponent --> vnode
-   vm._update(vm._render(), hydrating)
- }
-new Watcher(vm, updateComponent, noop, {
- before () {
-   if (vm._isMounted && !vm._isDestroyed) {
-     callHook(vm, 'beforeUpdate')
-   }
- }
-}, true /* isRenderWatcher */)
+export function mountComponent (
+  vm: Component,
+  el: ?Element,
+  hydrating?: boolean
+): Component {
+    ...
+    updateComponent = () => {
+       vm._update(vm._render(), hydrating)
+     }
+     ...
+    new Watcher(vm, updateComponent, noop, {
+     before () {
+       if (vm._isMounted && !vm._isDestroyed) {
+         callHook(vm, 'beforeUpdate')
+       }
+     }
+    }, true /* isRenderWatcher */)
+    return vm
+}
 ```
 这里`lazy`为`false`，所以构造函数初始化完成最后会执行`this.get()`
 ```js
