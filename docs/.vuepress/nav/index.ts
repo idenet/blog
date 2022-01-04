@@ -4,7 +4,8 @@ export const vueSidebar = {
       text: '从一个个例子看vue',
       children: [
         '/vue/example/',
-        '/vue/example/computed'
+        '/vue/example/computed',
+        '/vue/example/data',
       ]
     },
     {
