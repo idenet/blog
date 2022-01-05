@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="generator" content="VuePress 2.0.0-beta.32">
     <link rel="manifest" href="/blog/manifest.webmanifest"><meta name="theme-color" content="#3eaf7c"><link rel="shortcut icon" type="image/x-icon" href="/blog/favicon.ico"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="msapplication-TileColor" content="#000000"><title>vue响应式原理模拟 | 斌</title><meta name="description" content="斌的学习记录">
-    <link rel="modulepreload" href="/blog/assets/app.243e0da1.js"><link rel="modulepreload" href="/blog/assets/index.html.cd7337ad.js"><link rel="modulepreload" href="/blog/assets/plugin-vue_export-helper.21dcd24c.js"><link rel="modulepreload" href="/blog/assets/index.html.eecf8183.js">
+    <link rel="modulepreload" href="/blog/assets/app.7f271385.js"><link rel="modulepreload" href="/blog/assets/index.html.31c4c30d.js"><link rel="modulepreload" href="/blog/assets/plugin-vue_export-helper.21dcd24c.js"><link rel="modulepreload" href="/blog/assets/index.html.e32d9a33.js">
     <link rel="stylesheet" href="/blog/assets/style.56166ae7.css">
   </head>
   <body>
@@ -279,6 +279,6 @@ dep<span class="token punctuation">.</span><span class="token function">notify</
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre><div class="line-numbers"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br><span class="line-number">9</span><br><span class="line-number">10</span><br><span class="line-number">11</span><br><span class="line-number">12</span><br><span class="line-number">13</span><br><span class="line-number">14</span><br><span class="line-number">15</span><br><span class="line-number">16</span><br><span class="line-number">17</span><br><span class="line-number">18</span><br><span class="line-number">19</span><br><span class="line-number">20</span><br><span class="line-number">21</span><br><span class="line-number">22</span><br></div></div><h3 id="整体流程" tabindex="-1"><a class="header-anchor" href="#整体流程" aria-hidden="true">#</a> 整体流程</h3><ol><li>一个是第一次执行的时候，通过<code>new vue</code>将<code>data</code>中的数据通过响应式放到vue实例下(为了实现<code>this.xxx</code>的调用)，然后调用<code>observer</code>将<code>data</code>中的所有数据递归橙响应式数据，在该<code>get</code>和<code>set</code>中放好收集依赖和发送通知的功能，最后调用<code>compiler</code>解析指令</li><li>在使用<code>this.xxx</code>触发<code>set</code>的时候会触发<code>observer</code>中的<code>dep.notify</code>，这个<code>notify</code>会触发<code>watcher</code>中的<code>update</code>方法，执行在<code>compiler</code>中写好的回调</li></ol><p><img src="/blog/assets/5.b6ad35f0.png" alt="整体流程"></p><!--]--></div><footer class="page-meta"><!----><div class="meta-item last-updated"><span class="meta-item-label">Last Updated: </span><!----></div><!----></footer><!----><!--[--><!--]--></main><!--]--></div><!----><!----><!--]--></div>
-    <script type="module" src="/blog/assets/app.243e0da1.js" defer></script>
+    <script type="module" src="/blog/assets/app.7f271385.js" defer></script>
   </body>
 </html>
