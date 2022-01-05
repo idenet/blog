@@ -1,0 +1,439 @@
+# 观察属性
+
+依旧从一个最简单的例子开始
+
+```html
+<div id="app">
+  {{a}}
+</div>
+<script>
+  let vm = new Vue({
+    el: '#app',
+    data: {
+      a: 1,
+      b: 2,
+      d: 3
+    },
+    watch: {
+      a: function (val, oldVal) {
+        console.log('new: %s, old: %s', val, oldVal)
+      },
+      // 对象形式
+      b: {
+        handler: function (val, oldval) {
+          console.log('new: %s, old: %s', val, oldVal)
+        },
+        deep: true
+      },
+      d: {
+        handler: 'someMethod',
+        immediate: true
+      },
+      e: [
+        function handle2() {},
+        function handle3() {},
+        function handle4() {},
+      ]
+    },
+    methods: {
+      someMethod(val, oldval) {
+        console.log('new: %s, old: %s', val, oldVal)
+      }
+    }
+  })
+  </script>
+```
+
+可以看到，`watch`的书写形式很多，在官方文档`api`中还有更多的书写形式。[点击进入查看](https://cn.vuejs.org/v2/api/#watch)。有这么多形式，在`vue`处理的时候
+肯定不会一个个去单独处理，需要统一成一种格式，方便之后处理。这就是合并策略的作用。
+
+
+在`_init`方法中，有这么一段代码，这块的主要功能是**通过策略模式将用户书写的各个属性`props、data、methods、watch、computed`等序列化成`vue`需要的格式**
+因此我们直接在这里打个断点，看`vm.options`的生成格式就成。
+
+```js
+// 合并选项并赋值给 $options
+vm.$options = mergeOptions(
+  resolveConstructorOptions(vm.constructor),
+  // 用户传进来的options 或者为空
+  options || {},
+  vm
+)
+```
+可以看到，本身还是对象形式，对应三种格式，后面的代码都是以这三种格式来解析的
+```js
+{
+  watch:{
+    a: ƒ (val, oldVal)
+    b: {deep: true, handler: ƒ}
+    d: {handler: 'someMethod', immediate: true}
+    e: (3) [ƒ, ƒ, ƒ] 
+  }
+}
+```
+
+## initWatch
+
+在`initState`方法中，我们可以看到拿的就是`vm.$options`的数据，并且还有一个判断`opts.watch !== nativeWatch`。这是因为在`firefox`中，
+`Object`有一个`watch`方法，所以需要做一个判断。
+
+```js
+// instance/state.js 
+export function initState (vm: Component) {
+  //这个数组将用来存储所有该组件实例的 watcher 对象
+  vm._watchers = []
+  const opts = vm.$options
+  if (opts.watch && opts.watch !== nativeWatch) {
+    initWatch(vm, opts.watch)
+  }
+}
+```
+
+然后我们进去`initWatch`看看，很简单就是拿到`key`和`value`， 并传给了`createWatcher`方法，只是对不同格式做了一次处理。
+而在`createWatcher`方法中，对对象类型的`handle`和字符串类型的`handle`分别做了处理。可以看到，字符串类型的`handle`值是从
+`vm`上获得的，那么其实就能猜到`methods`方法除了在`options`有定义，实例上也有。
+
+**注意：**
+
+最后`vue`调用了`vm.$watch`，所以不管是函数形式的`watch`还是对象形式，最后都会调用`$watch`，这才是`watch`执行的开始
+
+```js
+function initWatch (vm: Component, watch: Object) {
+  for (const key in watch) {
+    const handler = watch[key]
+    // 如果是数组，做循环调用
+    if (Array.isArray(handler)) {
+      for (let i = 0; i < handler.length; i++) {
+        createWatcher(vm, key, handler[i])
+      }
+    } else {
+      createWatcher(vm, key, handler)
+    }
+  }
+}
+function createWatcher (
+  vm: Component,
+  expOrFn: string | Function,
+  handler: any,
+  options?: Object
+) {
+  if (isPlainObject(handler)) {
+    options = handler
+    handler = handler.handler
+  }
+  if (typeof handler === 'string') {
+    handler = vm[handler]
+  }
+  return vm.$watch(expOrFn, handler, options)
+}
+```
+
+## vm.$watch
+
+这里我们一行行代码看，第一个判断主要是当我们使用`$watch`去创建监听函数的时候，需要对`cb`进行重新调整。
+比如`cb`可以是这种形式`{handle:function(){}, deep:true}`，这时候传入的`options`会被覆盖。这里可以写个
+例子测试一下，比如`this.$watch('e', {handle:function(){}, deep:true}, {immediate: true})`，
+可以单步调试看看，后面的`options`字段将被覆盖。
+
+之后两行代码是核心，`vue`给`options`添加了一个`user`属性，并且赋值为`true`。之后`new Watcher`创建构造函数。
+可以发现这是第三种`Watcher`，我们将它命名为**用户`Watcher`**。
+
+```js
+Vue.prototype.$watch = function (
+  expOrFn: string | Function,
+  cb: any,
+  options?: Object
+): Function {
+  // 当前组件实例对象
+  const vm: Component = this
+  // 检测第二个参数是否是纯对象
+  if (isPlainObject(cb)) {
+    return createWatcher(vm, expOrFn, cb, options)
+  }
+  options = options || {}
+  // 表示为用户创建
+  options.user = true
+  // 创建watcher对象
+  const watcher = new Watcher(vm, expOrFn, cb, options)
+  ...
+}
+```
+好接下来，看`new Watcher`，因为这段代码已经贴过好几回了，这里捡之前没讲过的，`options`这一块等到一个单独的章节一起讲。
+先来看 求值表达式`expOrFn`，和其他不同，用户`watcher`支持使用字符串，所以这块可能走`parsePath`方法，这个方法返回了一个
+`expOrFn`经过处理的函数，并且能传入`obj`，和之前写的简易响应式很像，如果`obj`传入的是`this`，那么我们调用的就是`this[a]`，
+第二次就是`this[a][b]`
+
+```js
+export default class Watcher {
+  constructor (
+    vm: Component,
+    // 求值表达式
+    expOrFn: string | Function,
+    // 回调
+    cb: Function,
+    // 选项
+    options?: ?Object,
+    // 是否是渲染watcher
+    isRenderWatcher?: boolean
+  ) {
+    // options
+    ...
+    this.cb = cb // 回调
+    this.id = ++uid // uid for batching 唯一标识
+    this.active = true // 激活对象
+  
+    // parse expression for getter
+    if (typeof expOrFn === 'function') {
+      this.getter = expOrFn
+    } else {
+      // 处理表达式 obj.a
+      this.getter = parsePath(expOrFn)
+    }
+    // 当时计算属性 构造函数是不求值的
+    this.value = this.lazy
+      ? undefined
+      : this.get()
+  }
+}
+// core/util/lang.js
+export function parsePath (path: string): any {
+  const segments = path.split('.')
+  // 返回的还是函数， 会出现obj[a][b]
+  return function (obj) {
+    for (let i = 0; i < segments.length; i++) {
+      if (!obj) return
+      obj = obj[segments[i]]
+    }
+    return obj
+  }
+}
+```
+
+这样一个普通的不传入任何`options`的`watch`就会正常的执行到`this.get`方法。`pushTarget`方法已经讲过好几次了，
+功能就两个
+
+1. 将`Dep.target`赋值为当前`Watcher`
+2. 将当前`Watcher`放到`targetStack`数组中
+
+然后来看这段代码`this.getter.call(vm, vm)`，在看`parsePath`的返回赋值给了`this.getter`，所以其实我们执行的是
+`parsePath`返回的函数，并且正好我们传入了`vm`，这就和我上面说的一样了。单步执行，就会触发`this.a`，也就是`this._data.a`
+触发`data`里`a`的拦截器。
+
+```js
+get () {
+  pushTarget(this)
+  let value
+  const vm = this.vm
+  try {
+    value = this.getter.call(vm, vm)
+  } catch (e) {
+    ...
+  } finally {
+    // 清除当前 target
+    popTarget()
+    // 清空依赖
+    this.cleanupDeps()
+  }
+  return value
+}
+```
+后面的和`computed`一样，会将当前用户`watcher`存到对应`a`的`dep.subs`中。流程不细说了，建议自己`debug`一下。走完就会正常的，回到`get`方法
+走下面的清理流程。这样就结束初始化了吗？没有，我们还要回到`$watch`方法。中间步骤先不说，刚刚我们只是执行了`new Watcher`。之后我们还会走下面的流程，
+并且返回了一个`unwatchFn`。这个方法，可以执行`teardown`
+
+```js
+Vue.prototype.$watch = function (
+    expOrFn: string | Function,
+    cb: any,
+    options?: Object
+  ): Function {
+    ...
+    const watcher = new Watcher(vm, expOrFn, cb, options)
+    ...
+    // 返回一个解除函数
+    return function unwatchFn () {
+      watcher.teardown()
+    }
+  }
+
+```
+那么这样 初始化就完成了。下面开始执行例子。
+
+## 触发watch
+
+这里我们把例子改一下，用最简单的例子做测试。
+
+```html
+<div id="app">
+</div>
+<script>
+ let vm = new Vue({
+   el: '#app',
+   data: {
+     a: 1,
+   },
+   watch: {
+     a: function (val, oldVal) {
+       console.log('new: %s, old: %s', val, oldVal)
+     },
+   }
+ })
+</script>
+```
+
+这里我们做一个不一样的操作，将`template`里面的`{{a}}`去掉，这时候我们看看`vm._render`生成的匿名函数
+```js
+(function anonymous(
+) {
+with(this){return _c('div',{attrs:{"id":"app"}})}
+})
+```
+没有`a`，那么就不会调用`a`的`get`。这样就不会收集`a`的渲染`watcher`。因此`a`上只有一个用户`watcher`。
+这时候我们再触发`a`的`set`。在`console`中执行`vm.a = 6`。在`set`处断点，单步执行可以看到，执行流程是
+`dep.notify-->subs[i].update-->queueWatcher(this)-->nextTick(flushSchedulerQueue)`走到了`nextTick`，
+将当前用户`Watcher`放到了队列中，该队列会在`flushSchedulerQueue`中执行。
+
+之后执行到`flushSchedulerQueue`的时候，就会将队列中的`watcher`拿出来顺序执行，也就是执行`watcher.run`方法。
+
+```js
+run () {
+ // 观察者是否处于激活状态
+ if (this.active) {
+   // 重新求值
+   const value = this.get()
+   // 在渲染函数中 这里永远不会被执行，因为 两次值都是 undefiend
+   if (
+     value !== this.value ||
+     // 这里当值相等，可能是对象引用，值改变 引用还是同一个，所以判断是否是对象，
+     // 是的话也执行
+     isObject(value) ||
+     this.deep
+   ) {
+     // 保存旧值， set 新值
+     const oldValue = this.value
+     this.value = value
+     // 观察者是开发者定义 即 watch  $watch
+     if (this.user) {
+       const info = `callback for watcher "${this.expression}"`
+       invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info)
+     } else {
+       this.cb.call(this.vm, value, oldValue)
+     }
+   }
+ }
+}
+```
+这个方法要详细说说，首先会进行一次求值，这里主要是为了拿到新值，后面的依赖因为已经存在，会被重复的判断跳过。
+这时候会新旧值同时缓存，然后当前我们的`user=true`，所以就会执行`invokeWithErrorHandling`。这方法就是执行
+我们定义的`handle`，不过因为是用户定义，所以需要`try catch`。这样一次完整的`watcher`就执行完了。
+
+```js
+export function invokeWithErrorHandling (
+  handler: Function,
+  context: any,
+  args: null | any[],
+  vm: any,
+  info: string
+) {
+  let res
+  try {
+    res = args ? handler.apply(context, args) : handler.call(context)
+  } catch (e) {
+    handleError(e, vm, info)
+  }
+  return res
+}
+```
+
+## options 各个参数在vue中的执行过程
+
+这样基础的`watch`就解析完了，现在我们看看每一种`options`，在`vue`中的执行过程。也就是`new Watcher`时候，构造函数内的这段代码
+
+```js
+if (options) {
+  this.deep = !!options.deep // 是否使用深度观测
+  this.user = !!options.user // 用来标识当前观察者实例对象是 开发者定义的 还是 内部定义的
+  this.lazy = !!options.lazy // 惰性watcher  第一次不请求
+  this.sync = !!options.sync // 当数据变化的时候是否同步求值并执行回调
+  this.before = options.before // 在触发更新之前的 调用回调
+}
+```
+
+### immediate
+
+同样使用最初的例子，我们加上`options`。
+
+```html
+<div id="app">
+</div>
+<script>
+ let vm = new Vue({
+   el: '#app',
+   data: {
+     a: 1,
+   },
+   watch: {
+     a: {
+       handler: function (val, oldVal) {
+         console.log('new: %s, old: %s', val, oldVal)
+       },
+       immediate: true
+     },
+   }
+ })
+</script>
+```
+然后看源码，很简单在初始化过程中，`new Watcher`结束后，马上执行了一次`invokeWithErrorHandling`，
+也就是执行了自定义的函数回调，并且传入的值就是当前`new Watcher`通过计算拿到的值。
+
+```js
+Vue.prototype.$watch = function (
+ expOrFn: string | Function,
+ cb: any,
+ options?: Object
+): Function {
+ // 立即执行
+ if (options.immediate) {
+   const info = `callback for immediate watcher "${watcher.expression}"`
+   pushTarget()
+   // 获取观察者实例对象，执行了 this.get
+   invokeWithErrorHandling(cb, vm, [watcher.value], vm, info)
+   popTarget()
+ }
+ 
+}
+```
+
+### lazy
+
+`computed`的本质就是`lazy watcher`。并且`vue`为我们实现了值的缓存。所以一般我们不会再`watch`中传入`lazy`
+
+
+### sync
+
+设置这个值，顾名思义，就是同步，看这段代码, 在`Watcher`类的`update`方法中，也就是在我们触发拦截器`set`的时候，通过`dep.notify`
+到循环执行`watcher`的`update`方法，这里如果`sync=true`，就不会将当前`watcher`放到微任务队列中，而是直接执行。
+
+```js
+update () {
+ /* istanbul ignore else */
+ // 计算属性值是不参与更新的
+ if (this.lazy) {
+   this.dirty = true
+   // 是否同步更新变化
+ } else if (this.sync) {
+   this.run()
+ } else {
+   // 将当前观察者对象放到一个异步更新队列
+   queueWatcher(this)
+ }
+}
+```
+
+### deep
+
+修改例子
+
+```html
+
+```
