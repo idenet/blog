@@ -725,6 +725,55 @@ vm.a = 7
 vm.b = 5
 // new: 7,5, old: 7,2
 ```
+
+## teardown
+
+上面还有一个遗漏的东西没有讲，在我们执行完`$watch`的时候，会返回一个`unwatchFn`。比如例子
+```html
+<div id="app">
+</div>
+<script>
+ let vm = new Vue({
+   el: '#app',
+   data: {
+     a: 1,
+   },
+   mounted() {
+     let unwatch = this.$watch('a', (val, oldval)=> {
+       console.log(`new: ${val}, old: ${oldval}`)
+       unwatch()
+     })
+   }
+ })
+</script>
+```
+```js
+vm.a = 5
+// new: 5, old: 1
+vm.a = 6
+```
+执行它能发现，第二次`set`就不会执行了，所以他所做的工作就是清理。分为三步
+1. 清除当前`_watchers`里对应的`watcher`
+2. 清除`dep`里面的该`watcher`，注意`Dep`实例和`Watcher`是相互保存的，而这个就是为了清除
+3. 解除观察者激活状态
+```js
+teardown () {
+ if (this.active) {
+   // 在组件没有被销毁时，移除该watcher对象
+   if (!this.vm._isBeingDestroyed) {
+     remove(this.vm._watchers, this)
+   }
+   let i = this.deps.length
+   // 一个观察者可以同时观察多个属性，所以要移除该观察者观察的所有属性
+   while (i--) {
+     this.deps[i].removeSub(this)
+   }
+   // 解除观察者的激活状态
+   this.active = false
+ }
+}
+```
+
 # 结尾and碎碎念
 
 这样`watch`也算解析完毕了，这几天的文章写下来，对于我个人来说帮助非常大，基本相关代码都逐行去调试了。
