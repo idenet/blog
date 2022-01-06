@@ -1,4 +1,4 @@
-# 观察属性
+# watch侦听器
 
 依旧从一个最简单的例子开始
 
@@ -15,13 +15,13 @@
       d: 3
     },
     watch: {
-      a: function (val, oldVal) {
-        console.log('new: %s, old: %s', val, oldVal)
+      a: function (val, oldval) {
+        console.log('new: %s, old: %s', val, oldval)
       },
       // 对象形式
       b: {
         handler: function (val, oldval) {
-          console.log('new: %s, old: %s', val, oldVal)
+          console.log('new: %s, old: %s', val, oldval)
         },
         deep: true
       },
@@ -37,7 +37,7 @@
     },
     methods: {
       someMethod(val, oldval) {
-        console.log('new: %s, old: %s', val, oldVal)
+        console.log('new: %s, old: %s', val, oldval)
       }
     }
   })
@@ -64,7 +64,7 @@ vm.$options = mergeOptions(
 ```js
 {
   watch:{
-    a: ƒ (val, oldVal)
+    a: ƒ (val, oldval)
     b: {deep: true, handler: ƒ}
     d: {handler: 'someMethod', immediate: true}
     e: (3) [ƒ, ƒ, ƒ] 
@@ -273,8 +273,8 @@ Vue.prototype.$watch = function (
      a: 1,
    },
    watch: {
-     a: function (val, oldVal) {
-       console.log('new: %s, old: %s', val, oldVal)
+     a: function (val, oldval) {
+       console.log('new: %s, old: %s', val, oldval)
      },
    }
  })
@@ -374,8 +374,8 @@ if (options) {
    },
    watch: {
      a: {
-       handler: function (val, oldVal) {
-         console.log('new: %s, old: %s', val, oldVal)
+       handler: function (val, oldval) {
+         console.log('new: %s, old: %s', val, oldval)
        },
        immediate: true
      },
@@ -435,5 +435,299 @@ update () {
 修改例子
 
 ```html
-
+<div id="app">
+</div>
+<script>
+ let vm = new Vue({
+   el: '#app',
+   data: {
+     b: {
+       c: 2,
+       d: 3
+     }
+   },
+   watch: {
+     b: {
+       handler: function(val, oldval) {
+         console.log(`new: ${JSON.stringify(val)}, old: ${JSON.stringify(oldval)}`)
+       },
+       deep: true
+     }
+   }
+ })
+</script>
 ```
+`deep`表示深层监听，那么思考一下，`vue`会在哪里触发深层对象的拦截器？一般来说是在表层的`a`经过`get`的拦截器触发，存放
+`watcher`之后，那么显而易见了。查看`watcher`类里的`get`方法，也就是调用求值表达式的地方
+
+```js
+get () {
+ // 给Dep.target 赋值 Watcher
+ pushTarget(this)
+ let value
+ const vm = this.vm
+ try {
+   value = this.getter.call(vm, vm)
+ } catch (e) {
+   ...
+ } finally {
+   if (this.deep) {
+     traverse(value)
+   }
+   // 清除当前 target
+   popTarget()
+   // 清空依赖
+   this.cleanupDeps()
+ }
+ return value
+}
+```
+在清除依赖之前，`vue`判断了`deep`，然后调用了`traverse`方法。
+
+这里的代码比较难以理解，我们从最初开始，首先在第一次触发求值表达式的时候，触发的`b`的`get`，这时候会先把用户`watcher`放到
+`defineReactive`定义的关于`b`的闭包`dep`里。我们这么表示，同级还有一个 `new Observer`创建的`__ob__`
+
+```js
+{
+  b(-->闭包dep{subs:[Watcher], id:3}):{
+    c: 2,
+    d: 3,
+    __ob__: {
+      value: {},
+      id: 4,
+      subs: []
+    }
+  }
+  __ob__: {
+    value: {},
+    id: 2,
+    subs: []
+  }
+}
+```
+这里回忆一下`data`嵌套对象的初始化，并且再来看一下源码，`childOb`是有值的，初始化后被闭包保存着，而且值就是`b`的对象，
+而且`value`也是它。既然它有值，那么就会进入`childOb.dep.depend()`方法，这时候我们就在`__ob__`中存了一个`watcher`。
+```js
+export function defineReactive (
+  obj: Object,
+  key: string,
+  val: any,
+  customSetter?: ?Function,
+  shallow?: boolean
+) {
+  // 依赖框
+  const dep = new Dep()
+  let childOb = !shallow && observe(val)
+  Object.defineProperty(obj, key, {
+    enumerable: true,
+    get: function reactiveGetter () {
+      // 如果存在自定义getter 执行自定义的
+      const value = getter ? getter.call(obj) : val
+      // 要被收集的依赖
+      if (Dep.target) {
+        dep.depend()
+        if (childOb) {
+          childOb.dep.depend()
+        }
+      }
+      return value
+    },
+  })
+}
+```
+也就是说这样，还有一点要注意，这时候`watcher`的`newDepIds`有两个值`[3, 4]`
+```js
+{
+  b(-->闭包dep{subs:[Watcher], id:3}):{
+    c: 2,
+    d: 3,
+    __ob__: {
+      value: {},
+      dep: {
+        id: 4,
+        subs: [
+         Watcher // 通过childOb存的用户watcher
+        ]
+      },
+      vmCount:0
+    }
+  }
+  __ob__: {
+    value: {},
+    dep: {
+      id: 2,
+      subs: []
+    },
+    vmCount: 1
+  }
+}
+```
+之后`b`的拦截器就结束了，这时候进入`traverse`方法。首先查看`val`的值，它是通过上一次的计算拿到的，也就是`b`的值是对象。
+```js
+const seenObjects = new Set()
+
+export function traverse (val: any) {
+  _traverse(val, seenObjects)
+  seenObjects.clear()
+}
+
+function _traverse (val: any, seen: SimpleSet) {
+  let i, keys
+  // 检查 val是不是数组
+  // * val 为 被观察属性的值
+  const isA = Array.isArray(val)
+  // * 解决循环引用导致死循环的问题
+  // 拿到 Dep中的唯一值 进行已响应式对象去除
+  if (val.__ob__) {
+    const depId = val.__ob__.dep.id
+    if (seen.has(depId)) {
+      return
+    }
+    seen.add(depId)
+  }
+  // val[i] 和 val[key[i]] 都是在求值，这将触发紫属性的get拦截器
+  if (isA) {
+    i = val.length
+    while (i--) _traverse(val[i], seen)
+  } else {
+    keys = Object.keys(val)
+    i = keys.length
+    while (i--) _traverse(val[keys[i]], seen)
+  }
+}
+```
+中间这块`__ob__`的判断就不讲了，注释上写的很明白，其实就是当我们存在互相引用的时候，如果有`__ob__`就退出。以免死循环。
+这里直接进入这行`while (i--) _traverse(val[keys[i]], seen)`代码，`val[keys[i]]`明显会触发`d`的拦截器，这时候就会
+给`d`的`dep`添加`watcher`，同理`c`也是，这样初始化就完成了。
+
+```js
+{
+ c(-->闭包dep{subs:[watcher], id:5}): 2,
+ d(-->闭包dep{subs:[watcher], id:6}): 3,
+ __ob__: {
+   value: {},
+   dep: {
+     id: 4,
+     subs: [
+      Watcher // 通过childOb存的用户watcher
+     ]
+   },
+   vmCount:0
+ }
+}
+```
+因为在相关属性上的`dep`都保存了用户`watcher`所以，我们设置多种属性都能触发`watcher`，尝试下面代码
+
+```js
+vm.b.c = 7
+// new: {"c":7,"d":3}, old: {"c":7,"d":3}
+vm.b.d = 8
+// new: {"c":7,"d":8}, old: {"c":7,"d":8}
+vm.b = 6
+// new: 6, old: {"c":7,"d":8}
+vm.$set(vm.b, 'e', 6)
+// new: {"c":2,"d":3,"e":6}, old: {"c":2,"d":3,"e":6}
+```
+因为`vue`在`b`对象上的`__ob__`属性内`dep`保存了用户`watcher`，所以对`b`的操作也是生效的，除非我们真要这么做，
+深度观测上这样其实还是蛮消耗性能的，如果层级再多一点。我们有更好的处理方式。
+
+观察`parsePath`方法，有这么一段代码`path.split('.')`，所以如果我们想观测深层，例如想观测`c`可以这么写
+
+```html
+<div id="app">
+</div>
+<script>
+ let vm = new Vue({
+   el: '#app',
+   data: {
+     b: {
+       c: 2,
+       d: 3
+     }
+   },
+   watch: {
+     'b.c': {
+       handler: function(val, oldval) {
+         console.log('new: %s, old: %s', val, oldval)
+       },
+     }
+   }
+ })
+</script>
+```
+这样我们只对`b`、`b`下的属性`__ob__`、`c`保存了`watcher`。如果`b`内属性很多，相当于少了`n-1/n`。很大的优化了。
+
+### before
+
+这不是一个官方文档中使用的属性，但也是可以使用的，如下
+
+```html
+<div id="app">
+</div>
+<script>
+ let vm = new Vue({
+   el: '#app',
+   data: {
+     a: 1
+   },
+   watch: {
+     a: {
+       handler: function (val, oldval) {
+         // console.log(`new: ${JSON.stringify(val)}, old: ${JSON.stringify(oldval)}`)
+         console.log('new: %s, old: %s', val, oldval)
+       },
+       before: function () {
+         console.log('调用了before')
+       }
+     }
+   }
+ })
+</script>
+```
+在源码中，它在`watcher.run()`之前运行，而在我们使用渲染`watcher`的时候，他被用作于触发`beforeUpdate`。
+而上面的例子，很显然也会在`handler`之前运行
+```js
+if (watcher.before) {
+   watcher.before()
+}
+id = watcher.id
+has[id] = null
+watcher.run()
+```
+
+## 函数调用的形式
+
+使用`$watch`并没有什么不同，但是它有声明式不具备的功能，想想`computed`，它在`new Watcher`的时候求值表达式一直是函数。那么显然
+`watch`也应该支持传入函数，这就是`$watch`的作用。例如下面的例子
+
+```html
+<div id="app">
+</div>
+<script>
+ let vm = new Vue({
+   el: '#app',
+   data: {
+     a: 1,
+     b: 2
+   },
+   mounted() {
+     this.$watch(() => ([this.a, this.b]), (val, oldval)=> {
+       console.log(`new: ${val}, old: ${oldval}`)
+     })
+   }
+ })
+</script>
+```
+这是分别触发`a`或者`b`都会触发监听回调。至于原理显然是`a`和`b`的`dep`里都保存了该用户`watcher`。
+```js
+vm.a = 7
+// 24 new: 7,2, old: 1,2
+vm.b = 5
+// new: 7,5, old: 7,2
+```
+# 结尾and碎碎念
+
+这样`watch`也算解析完毕了，这几天的文章写下来，对于我个人来说帮助非常大，基本相关代码都逐行去调试了。
+如果有人也有这想法，建议在无痕模式下，并且多`f5`刷新几次清除缓存的影响。
+
+其实每天文章量还蛮大的，但是当初的想法就是一个相关属性一篇解析，如果分开就不完整。
