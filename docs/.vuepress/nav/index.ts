@@ -1,4 +1,12 @@
 export const vueSidebar = {
+  '/review/': [
+    {
+      text: '前端基础/面试',
+      children: [
+        '/review/html',
+      ]
+    },
+  ],
   '/vue/': [
     {
       text: '从一个个例子看vue',

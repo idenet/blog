@@ -34,6 +34,10 @@ export default defineUserConfig({
     repoLabel: 'Github',
     navbar: [
       {
+        text: '前端基础/面试',
+        link: '/review/html'
+      },
+      {
         text: 'Vue源码分析',
         link: '/vue/example/',
       },
