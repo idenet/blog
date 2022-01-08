@@ -4,6 +4,7 @@ export const vueSidebar = {
       text: '前端基础/面试',
       children: [
         '/review/html',
+        '/review/css',
       ]
     },
   ],
