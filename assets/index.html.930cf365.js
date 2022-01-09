@@ -1,1 +1,0 @@
-const e={key:"v-6d9f6032",path:"/vue/example/",title:"\u5F00\u7BC7",lang:"zh-CN",frontmatter:{},excerpt:"",headers:[],git:{updatedTime:1641728292e3},filePathRelative:"vue/example/readme.md"};export{e as data};
