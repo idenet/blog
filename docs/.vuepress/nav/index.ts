@@ -5,6 +5,7 @@ export const vueSidebar = {
       children: [
         '/review/html',
         '/review/css',
+        '/review/js',
       ]
     },
   ],
