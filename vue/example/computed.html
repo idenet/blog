@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="generator" content="VuePress 2.0.0-beta.32">
     <link rel="manifest" href="/blog/manifest.webmanifest"><meta name="theme-color" content="#3eaf7c"><link rel="shortcut icon" type="image/x-icon" href="/blog/favicon.ico"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="msapplication-TileColor" content="#000000"><title>计算属性 | 斌</title><meta name="description" content="斌的学习记录">
-    <link rel="modulepreload" href="/blog/assets/app.b70de2f6.js"><link rel="modulepreload" href="/blog/assets/computed.html.6200cf69.js"><link rel="modulepreload" href="/blog/assets/plugin-vue_export-helper.21dcd24c.js"><link rel="modulepreload" href="/blog/assets/computed.html.a656f998.js">
+    <link rel="modulepreload" href="/blog/assets/app.5627432c.js"><link rel="modulepreload" href="/blog/assets/computed.html.3fb1a0a3.js"><link rel="modulepreload" href="/blog/assets/plugin-vue_export-helper.21dcd24c.js"><link rel="modulepreload" href="/blog/assets/computed.html.25fbb9ed.js">
     <link rel="stylesheet" href="/blog/assets/style.56166ae7.css">
   </head>
   <body>
@@ -481,6 +481,6 @@ Dep<span class="token punctuation">.</span>target <span class="token operator">=
  <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 </code></pre><div class="line-numbers"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br><span class="line-number">9</span><br><span class="line-number">10</span><br><span class="line-number">11</span><br><span class="line-number">12</span><br><span class="line-number">13</span><br><span class="line-number">14</span><br></div></div><p><code>depIds</code>保存的是上一次的依赖，每一个<code>Dep</code>都会存有一个唯一的<code>id</code>，计算的值没变，所以上一次和这一次是一致的。依赖不会保存。这里仍旧和<code>data</code>的初始化相关。</p><p>然后第二个<code>this[&#39;compA&#39;]</code>进来就和初始化一样了。</p><h2 id="总结" tabindex="-1"><a class="header-anchor" href="#总结" aria-hidden="true">#</a> 总结</h2><p>这样我们就彻底解析了<code>computed</code>的核心实现，也解答了官网的话。如果是增加依赖执行也并无不同。最后再来看一下整个流程图</p><p><img src="/blog/assets/initComputed.70d4c79e.png" alt="computed"></p><!--]--></div><footer class="page-meta"><!----><div class="meta-item last-updated"><span class="meta-item-label">Last Updated: </span><!----></div><!----></footer><nav class="page-nav"><p class="inner"><span class="prev"><a href="/blog/vue/example/data.html" class="" aria-label="data的响应式处理"><!--[--><!--]--> data的响应式处理 <!--[--><!--]--></a></span><span class="next"><a href="/blog/vue/example/watch.html" class="" aria-label="watch侦听器"><!--[--><!--]--> watch侦听器 <!--[--><!--]--></a></span></p></nav><!--[--><!--]--></main><!--]--></div><!----><!----><!--]--></div>
-    <script type="module" src="/blog/assets/app.b70de2f6.js" defer></script>
+    <script type="module" src="/blog/assets/app.5627432c.js" defer></script>
   </body>
 </html>
