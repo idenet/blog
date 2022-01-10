@@ -17,6 +17,7 @@ export const vueSidebar = {
         '/vue/example/data',
         '/vue/example/computed',
         '/vue/example/watch',
+        '/vue/example/component',
       ]
     },
     {
