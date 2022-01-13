@@ -18,6 +18,7 @@ export const vueSidebar = {
         '/vue/example/computed',
         '/vue/example/watch',
         '/vue/example/component',
+        '/vue/example/async_comp',
       ]
     },
     {
