@@ -19,6 +19,7 @@ export const vueSidebar = {
         '/vue/example/watch',
         '/vue/example/component',
         '/vue/example/async_comp',
+        '/vue/example/v-slot',
       ]
     },
     {
