@@ -40,11 +40,14 @@
 
 ## 插槽的编译
 
+
 `vue`的编译分为三步
 
 1. `parse`：将`html`转换成`AST`树
 2. `opitimize`: 将`AST`中不变的数据标识成`static`，优化的作用
 3. `codegen`: 将`AST`代码转成字符串，并通过`new Function`实例化为函数
+
+### parse
 
 那么我们先看第一步，在`parse`方法里面`vue`调用了`parseHTML`方法。`parseHTML`方法传入两个参数，一个是`html`字符串，
 在第二个参数里面传入了四个钩子函数`start、end、chars、comment`，这里要讲清楚的话比较麻烦，而我们通过查看执行栈的方式来看`parse`的执行过程。
@@ -182,3 +185,5 @@ const childAst = {
   ]
 }
 ```
+
+### codegen
