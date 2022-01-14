@@ -4,4 +4,4 @@ Github博客地址：https://github.com/idenet/blog<br/>
 
 ## vue2.0源码
 
-[vue2.0源码分析](https://idenet.github.io/blog/vue/vue-router/)
+[vue2.0源码分析](https://idenet.github.io/blog/vue/example/)
