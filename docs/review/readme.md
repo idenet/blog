@@ -62,3 +62,29 @@ function _const (key, value) {
 _const('a', 1)
 _const('a', 2)
 ```
+
+## 图片懒加载
+
+```js
+// 获取所有的图片标签
+const imgs = document.getElementsByTagName('img')
+// 获取可视区域高度
+const viewHeight =
+  window.innerHeight || document.documentElement.clientHeight
+// 统计当前显示到了那张图片
+let num = 0
+function lazyload () {
+  for (let i = num; i < imgs.length; i++) {
+    // 获取判断元素露出
+    let distance = viewHeight - imgs[i].getBoundingClientRect().top
+    if (distance >= 0) {
+      // 给元素写入真实的src，展示图片
+      imgs[i].src = imgs[i].getAttribute('data-src')
+      // 前i张图片已经加载完毕，下次从第i+1张开始检查是否露出
+      num = i + 1
+    }
+  }
+}
+// 监听scroll 事件
+window.addEventListener('scroll', lazyload, false)
+```
