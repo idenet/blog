@@ -20,6 +20,7 @@ export const vueSidebar = {
         '/vue/example/component',
         '/vue/example/async_comp',
         '/vue/example/v-slot',
+        '/vue/example/keep_alive',
       ]
     },
     {
