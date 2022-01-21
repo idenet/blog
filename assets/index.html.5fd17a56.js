@@ -1,1 +1,0 @@
-const e={key:"v-5c29c19d",path:"/vue/vue-router/",title:"hash \u548C history \u539F\u7406\u7684\u533A\u522B",lang:"zh-CN",frontmatter:{},excerpt:"",headers:[],git:{updatedTime:1642409746e3},filePathRelative:"vue/vue-router/readme.md"};export{e as data};
