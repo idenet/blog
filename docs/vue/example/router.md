@@ -199,6 +199,65 @@ function match (
 }
 ```
 
+因为例子中没有定义`name`，所以相关代码先删除。先看`normalizeLocation`方法，该方法是对当前`router`做了一次计算，在这里我们可以不去看源码实现，
+看看他的单元测试，在`location.spec.js`中，很明显就是对`location`进行了序列化，然后通过`matchRoute`去和之前的`pathList`匹配，初始化的话就会
+直接生成`route`。
+
+初始化的`route`我们知道就是`/`。完成第一步，我们看第二步调用`confirmTransition`
+
+该方法很长，但是也能分成四块，**（这里建议自己去打上断点分析，方法和异步组件分析一致）**
+
+1. 通过`resolveQueue`方法解析出回调
+2. 生成`queue`
+3. 声明`iterator`函数
+4. 并且执行`runQueue`
+
+这里重点提一下：`runQueue`是一个异步函数的队列化执行函数
+```js
+export function runQueue (queue: Array<?NavigationGuard>, fn: Function, cb: Function) {
+  const step = index => {
+    if (index >= queue.length) {
+      cb()
+    } else {
+      if (queue[index]) {
+        fn(queue[index], () => {
+          step(index + 1)
+        })
+      } else {
+        step(index + 1)
+      }
+    }
+  }
+  step(0)
+}
+```
+我们观察他的入参，`queue`是之前生成的一位函数队列，是一个定义的导航队列，`fn`是传入的`iterator`，cb是定义好的回调函数，
+当我们执行完队列会调用`cb`进行首次渲染的结束，`fn`的第二个参数是下一个步进器，显然就是传入的`next`。
+
+查看`iterator`方法的入参`(hook: NavigationGuard, next)`，非常明显了，执行`hook`，然后在结束后执行`next`到下一个。
+这也就是为啥每次导航守卫需要`next`原因。
+
+稍微了解了这些，我们就可以结合官网说明的导航解析流程分析
+
+1. 在失活的组件里调用 `beforeRouteLeave` 守卫。
+2. 调用全局的 `beforeEach` 守卫。
+3. 在重用的组件里调用 `beforeRouteUpdate` 守卫 (2.2+)。
+4. 在路由配置里调用 `beforeEnter`。
+5. 解析异步路由组件。
+
+首先在首次渲染中，是没有失活组件的，那么直接跳过。`beforeEach`将被触发。触发完成后注意`runQueue`的第三个参数
+```js
+onComplete(route)
+if (this.router.app) {
+ this.router.app.$nextTick(() => {
+   handleRouteEntered(route)
+ })
+}
+```
+我们看其中的这一段代码，首先执行了`onComplete`，在该方法中对`route`做了一些处理，并且执行了`beforeEnter`，v这两个都是全局路由钩子
+这样首次渲染的路由钩子就执行完了。然后执行了`$nextTick`。
 
 
+## 两个函数组件
 
+### router-link

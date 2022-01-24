@@ -88,3 +88,84 @@ function lazyload () {
 // 监听scroll 事件
 window.addEventListener('scroll', lazyload, false)
 ```
+
+## 手写 call apply bind
+
+手写`call`，几个主要关键点
+
+1. 判断当前调用的是`function`，如果是报错
+2. 判断存在传入对象
+3. 将调用方法赋值到对象上，然后执行
+4. 返回执行结果
+
+```js
+Function.prototype.mycall = function(context) {
+  // 判断是否是函数
+  if(typeof this !== 'function') {
+    throw new Error('type error')
+  }
+  // 获取参数
+  let args = [...arguments].slice(1),
+  result = null
+  // 判断context 是否传入 如果未传入是window
+  let context = context || window
+ // 将 调用函数设置为对象的方法
+ context.fn = this
+ // 调用函数
+ result = context.fn(...args)
+ // 将属性删除
+ delete context.fn
+ return result
+}
+```
+
+手写`apply`，主要关键点
+
+处理参数处理上不同，其他是一样的
+
+```js
+Function.prototype.myapply = function(context) {
+  // 判断是否是函数
+  if(typeof this !== 'function') {
+    throw new Error('type error')
+  }
+  let result = null
+
+  // 判断传入的context 是否为空
+  let context= context || window
+  // 将调用函数赋值给对象
+  context.fn = this
+  // apply 传入的是数组，参数处理上稍有不同
+  if(arguments[1]) {
+    result = context.fn(...arguments[1])
+  }else {
+    result = context.fn()
+  }
+  delete context.fn
+  return result
+}
+```
+
+手写 `bind`，`bind`的实现是重点，首先需要明白其 两个特点
+
+1. `bind`的第二个及其以后的参数可传可不传，传了会作为原函数的参数调用，并且如果原函数还有参数，那么两个会按照顺序调用
+2. `bind`的返回函数还可以作为`new`操作符的构造函数
+
+```js
+Function.prototype.mybind = function(context) {
+    // 判断是否是函数
+  if(typeof this !== 'function') {
+    throw new Error('type error')
+  }
+  let args = [...arguments].slice(1),
+  fn = this
+  return function Fn() {
+    // 根据调用方式不同，传入不同的值
+    return fn.apply(
+      this instanceof Fn ? this: context, // 处理new 操作符和普通调用
+      args.concat(...arguments)
+    )
+  }
+}
+```
+
