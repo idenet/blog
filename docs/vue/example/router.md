@@ -183,7 +183,7 @@ function match (
  redirectedFrom?: Location
 ): Route {
  const location = normalizeLocation(raw, currentRoute, false, router)
- 
+
  if (location.path) {
    location.params = {}
    for (let i = 0; i < pathList.length; i++) {
@@ -254,10 +254,80 @@ if (this.router.app) {
  })
 }
 ```
-我们看其中的这一段代码，首先执行了`onComplete`，在该方法中对`route`做了一些处理，并且执行了`beforeEnter`，v这两个都是全局路由钩子
+我们看其中的这一段代码，首先执行了`onComplete`，在该方法中对`route`做了一些处理，并且执行了`beforeEnter`，这两个都是全局路由钩子
 这样首次渲染的路由钩子就执行完了。然后执行了`$nextTick`。
 
 
 ## 两个函数组件
 
+这里主要看路由跳转时，路由守卫的执行过程，其他的建议自己`debugger`尝试
+
 ### router-link
+
+`router-link`组件应该就是`a`组件的包装，当我们点击的时候，其实就是触发点击事件，然后去执行`router.push()`。看`render`部分的相关源码
+
+```js
+const handler = e => {
+   if (guardEvent(e)) {
+     if (this.replace) {
+       router.replace(location, noop)
+     } else {
+       router.push(location, noop)
+     }
+   }
+}
+const on = { click: guardEvent }
+data.on = on
+data.attrs = { href, 'aria-current': ariaCurrentValue }
+```
+在`push`方法内部，执行的还是`transitionTo`执行过程和之前分析的一样，重点还是看`queue、runQueue、iterator`这个三执行的过程。
+
+在这里我们会再次执行全局前置路由`beforeEach`，然后调用路由配置中定义的`beforeEnter`，之后就是执行异步组件。执行完`queue`队列就执行完了，那么就和上面一样，执行
+`runQueue`定义的`cb`
+```js
+const enterGuards = extractEnterGuards(activated)
+const queue = enterGuards.concat(this.router.resolveHooks)
+runQueue(queue, iterator, () => {
+  if (this.pending !== route) {
+    return abort(createNavigationCancelledError(current, route))
+  }
+  this.pending = null
+  onComplete(route)
+  if (this.router.app) {
+    this.router.app.$nextTick(() => {
+      handleRouteEntered(route)
+    })
+  }
+})
+```
+在该方法的执行过程中，我们将拿到了路由中定义的组件对象，进行`Vue.extend`。所以可以看到，路由上的组件其实是全局混入的。并且返回了`routerEnter`，也就是说我们在之后执行的
+`runQueue`中，必然有`beforeRouteEnter`钩子，但是当前组件没有被实例化，所以我们拿不到`this`。在`onComplete`方法中，将完成`url`的更新和全局后置路由`afterEach`的执行。
+
+**那为什么`next`中可以访问到`this`呢**
+
+首先根据`runQueue`可以知道，`next`其实就是执行了下一步，如果`queue`执行完了，就是执行`cb`，也就是`runQueue`的第三个参数，在这里，可以看到`$nextTick`。重新渲染组件，
+在这个过程中`render`函数中有`_c("router-view")`，因此我们会运行到`router-view`组件的创建过程。
+
+### router-view
+
+这是一个函数式组件，如果不明白可以查看官网对于`functional`组件的定义。函数式组件主要看`render`函数，在`render`函数中有这么一段代码
+
+```js
+const route = parent.$route
+```
+
+之前已经说过，`this.$route`会进行一次依赖收集，收集的就是当前的`route`。并且会缓存当前组件。新增`data.hook.init`和`data.hook.prepatch`。最后就是执行`h`函数渲染，
+这里`component`就是路由配置中的组件，在组建执行过程中，会执行`data.hook.init`，而在这个方法中会执行`handleRouteEntered`。
+在这个方法中会执行之前保存的`cbs`，也就是`next`的回调。也就是说这里可以访问到组件的`this`了。
+
+这样路由所有组件的首次渲染就完成了，还有一个点
+
+在被激活的组件里调用 `beforeRouteEnter`
+
+当我们再次切换到已经初始化过的组件中时，这时候`resolveQueue`解析出来的就存在`updated`，也就是说会执行`beforeRouteLeave`钩子。
+
+## 总结
+
+1. `vue-router`使用`Vue.use`的方式注册，通过`Vue.mixin`混入`beforeCreate`，在其中执行`init`方法
+2. 如果浏览器不支持`history`模式会自动降级，并且所有的路由跳转最终都是`transitionTo`方法的调用
+3. 通过类似`generator`函数的`runQueue`执行钩子函数队列`queue`。在`runQueue`的最后执行全局`afterEach`和`nextTick`
