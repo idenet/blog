@@ -21,6 +21,8 @@ export const vueSidebar = {
         '/vue/example/async_comp',
         '/vue/example/v-slot',
         '/vue/example/keep_alive',
+        '/vue/example/router',
+        '/vue/example/vuex',
       ]
     },
     {
