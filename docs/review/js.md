@@ -1,23 +1,32 @@
-# js基础
+# js基础-各种手写的实现
 
-这里方代码实现，如果想看基础总结，查看`xmind`文件夹下的`js`文件
+如果想看基础总结，查看`xmind`文件夹下的`js`文件
 
 ![js脑图](../images/review/2.png)
 
+## Object.create的实现
+
+将创建的对象a的隐式原型指向传入的显示原型
+
+```js
+function create(obj) {
+  function F() {}
+  F.prototype = obj
+  return new F()
+}
+```
+
 ## instanceof 的实现
+
+右侧构造函数的`prototype`是否在左侧原型链中能够找到
 
 ```js
 function myInstance (left, right) {
-  // 获取对象的原型
   let proto = Object.getPrototypeOf(left)
-  // 获取构造函数的prototype
   let prototype = right.prototype
-
-  // 判断构造函数的prototype 对象是否在对象的原型链上
-  while (true) {
-    if (!proto) return false
-    if (proto === prototype) return true
-    // 如果没有找到就继续从其原型上找，
+  while(true) {
+    if(!proto) return false
+    if(proto === prototype) return true
     proto = Object.getPrototypeOf(proto)
   }
 }
@@ -25,18 +34,62 @@ function myInstance (left, right) {
 
 ## new 操作符实现原理
 
-这里去除一些边际判断 只关注核心
+1. 使用`Object.create`创建一个空对象，并且隐式原型指向传入的显示原型
+2. 使用`apply`执行构造函数和确定`this`指向
+3. 返回空对象或者执行后拿到的对象
 
 ```js
-function objectFactory(constructor, ...rest) {
-  // 创建一个空对象，对象的原型为构造函数的prototype
-  let newObj  = Object.create(constructor.prototype)
-  // 将this 指向这个新对象，并执行函数
-  constructor.apply(newObj, rest)
-  // 返回新对象
-  return newObj
+function myNew(fn, ...rest) {
+  let obj = Object.create(fn.prototype)
+  let res = fn.apply(obj, ...rest)
+  if(res && (typeof res ==='object'|| typeof res === 'function')) {
+    return res
+  }
+  return obj
 }
 ```
+
+## 防抖函数实现
+
+在n秒内触发事件后，如果再次触发会重新计算时间
+
+```js
+function debounce(fn, wait) {
+  let timer = null
+  return function() {
+    let context = this,
+    args = arguments
+    if(timer) {
+      clearTimeout(timer)
+      timer = null
+    }
+    timer = setTimeout(() => {
+      fn.apply(context, args)
+    }, wait);
+  }
+}
+```
+
+
+## 节流函数的实现
+
+n秒内只会执行一次事件
+
+```js
+function throttle(fn, delay) {
+  let curTime = Date.now()
+  return function() {
+    let context = this,
+      args = arguments,
+      nowTime = Date.now()
+    if(nowTime - curTime >= delay) {
+      curTime = Date.now()
+      return fn.apply(context, args)
+    }
+  }
+}
+```
+
 
 ## ajax
 
