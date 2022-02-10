@@ -49,6 +49,7 @@ function myNew(fn, ...rest) {
 }
 ```
 
+
 ## 防抖函数实现
 
 在n秒内触发事件后，如果再次触发会重新计算时间
@@ -90,6 +91,132 @@ function throttle(fn, delay) {
 }
 ```
 
+## call 和 apply的实现
+
+`call`和`apply`实现是一样的，只是传入的参数一个是数组，一个是单个的
+
+```js
+Function.prototype.myCall = function(context, ...args) {
+  if(!context || context === null) {
+    context = window
+  }
+  let fn = Symbol()
+  context[fn] = this
+  return context[fn](...args)
+}
+```
+
+## bind 实现
+
+1. `bind`可以被`new`调用，调用后`this`指向当前实例
+2. 返回的是一个函数
+
+```js
+Function.prototype.myBind = function(context, ...args) {
+  if(!context || context === null) {
+    context = window
+  }
+  let fn = Symbol()
+  context[fn] = this
+  let _this = this
+  const result = function(...innerArgs) {
+    // 说明是用new了 是 否早函数
+    if(this instanceof _this === true) {
+      this[fn] = _this // 重新赋值函数
+      this[fn](...[...args, ...innerArgs])
+    }else {
+      // 如果是普通函数调用 this指向就是传入的context
+      context[fn](...[...args, ...innerArgs])
+    }
+  }
+  result.prototype = Object.create(this.prototype)
+  return result
+}
+```
+
+## 实现一个compose函数
+
+用法如下
+```js
+function fn1 (x) {
+  return x + 1
+}
+function fn2 (x) {
+  return x + 2
+}
+function fn3 (x) {
+  return x + 3
+}
+function fn4 (x) {
+  return x + 4
+}
+const a = compose(fn1, fn2, fn3, fn4)
+
+console.log(a(1)) // 1+4+3+2+1=11
+```
+实现
+
+```js
+function compose(...fn) {
+  if(!fn.length) return v=>v
+  if(fn.length === 1) return fn[0]
+  return fn.reduce((pre, cur) => (...args) => pre(cur(...args)))
+}
+```
+
+## 用 settimeout 模拟 setinterval
+
+为什么要这么做？
+
+在`setinterval`中，因为主线程执行时间不确定
+
+1. 可能多个定时器会连续执行
+2. 某些间隔可能会跳过
+
+```js
+function mySetinterval(fn, t) {
+  let timer = null
+  function interval() {
+    fn()
+    timer = setTimeout(interval, t);
+  }
+  interval()
+  return {
+    cancel: () => clearTimeout(timer)
+  }
+}
+```
+
+## 实现发布订阅模式
+
+```js
+class EventEmitter {
+  constructor() {
+    this.events = {}
+  }
+  on(type, callback) {
+    if(!this.events[type]) {
+      this.events[type] = [callback]
+    } else {
+      this.events[type].push(callback)
+    }
+  }
+  emit(type, ...rest) {
+    this.events[type] && this.events[type].forEach(fn => fn.apply(this, rest))
+  }
+  off(type, callback) {
+    if(!this.events[type]) return
+    this.events[type] = this.events[type].filter(item => item !== callback)
+  }
+  once(type, callback) {
+    function fn() {
+      callback()
+      this.off(type, fn)
+    }
+    this.on(type, fn)
+  }
+}
+```
 
 ## ajax
 
