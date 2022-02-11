@@ -218,6 +218,211 @@ class EventEmitter {
 }
 ```
 
+## 数组去重
+
+```js
+function uniqueArr(arr) {
+  return [...new Set(arr)]
+}
+```
+
+## 数组扁平化
+
+```js
+function flatter(arr) {
+  if(!arr.length) return 
+  return arr.reduce((pre, cur) => (Array.isArray(cur) ? [...pre, flatter(cur)]: [...pre, cur]), [])
+}
+```
+迭代的方法
+```js
+function flatter2(arr) {
+  if(!arr.length) return
+  if(arr.some(item => Array.isArray(item))) {
+    arr = [].concat(...arr)
+  }
+  return arr
+}
+```
+
+## es5 模拟 es6的 继承
+
+```js
+function Parent (name) {
+  this.name = name
+  this.say = () => {
+    console.log(this.name)
+  }
+}
+
+Parent.prototype.play = () => {
+  console.log(222)
+}
+function Children (name) {
+  Parent.call(this)
+  this.name = name
+}
+Children.prototype = Object.create(Parent.prototype)
+Children.prototype.constructor = Children
+```
+
+## 实现有并行限制的 promise 调度器
+
+题目描述:JS 实现一个带并发限制的异步调度器 Scheduler，保证同时运行的任务最多有两个
+addTask(1000,"1");
+addTask(500,"2");
+addTask(300,"3");
+addTask(400,"4");
+的输出顺序是：2 3 1 4
+
+整个的完整执行流程：
+
+一开始1、2两个任务开始执行
+500ms时，2任务执行完毕，输出2，任务3开始执行
+800ms时，3任务执行完毕，输出3，任务4开始执行
+1000ms时，1任务执行完毕，输出1，此时只剩下4任务在执行
+1200ms时，4任务执行完毕，输出4
+
+```js
+class Scheduler {
+  constructor(limit) {
+    this.queue = []
+    this.maxCount = limit
+    this.runCounts = 0
+  }
+  add(time, order) {
+    const promiseCreator = () => {
+      return new Promsie((resolve, reject) => {
+        setTimeout(() => {
+          console.log(order)
+          resolve()
+        }, time);
+      })
+    }
+    this.queue.push(promiseCreator)
+  }
+  taskStar() {
+    for(let i=0;i< this.maxCount; i++) {
+      this.request()
+    }
+  }
+  request() {
+       if (!this.queue || !this.queue.length || this.runCounts >= this.maxCount)
+      return
+      this.runCount++
+      this.queue.shift()().then(() => {
+        this.runCount--
+        this.request()
+      })
+  }
+}
+
+const scheduler = new Scheduler(2)
+
+const addTask =(time, order) => {
+  scheduler.add(time, order)
+}
+addTask(1000, '1')
+addTask(500, '2')
+addTask(300, '3')
+addTask(400, '4')
+scheduler.taskStart()
+```
+
+## 深拷贝
+
+```js
+function isObject() {
+  return typeof val === 'object' && val !== null
+}
+function deepClone(obj, hash = new WeakMap()) {
+  if(!isObject(obj)) return obj
+  // 已存在
+  if(hash.hah(obj)) {
+    return hash.get(obj)
+  }
+  let target = Array.isArray(obj) ? [] : {}
+  hash.set(obj, target)
+  Reflect.ownKeys(obj).forEach(item => {
+    if (isObject(obj[item])) {
+      target[item] = deepClone(obj[item], hash)
+    } else {
+      target[item] = obj[item]
+    }
+  })
+  return target
+}
+```
+
+## 柯里化
+
+柯里化实现，部分求值，吧接收多个参数的函数转变成接收一个参数的函数
+用法如下：
+const add = (a, b, c) => a + b + c;
+const a = currying(add, 1);
+console.log(a(2,3))
+
+
+```js
+function currying(fn, ...args) {
+  const length = fn.length
+  let allArgs = [...args]
+  const res = (...newArgs) => {
+    allArgs = [...allArgs, ...newArgs]
+    if(allArgs.length === length) {
+      return fn(...allArgs)
+    } else {
+      return res
+    }
+  }
+  return res
+}
+```
+
+升级版：add(1)(2)(3)...(n)
+
+```js
+function add(...args) {
+  let allArgs = [...args]
+  function fn(...newArgs) {
+    allArgs = [...allArgs, ...newArgs]
+    return fn
+  }
+  fn.toString = function () {
+    if(!allArgs.length) return
+    return allArgs.reduce((pre, cur) => pre+cur)
+  }
+  return fn
+}
+```
+
+## 版本号排序
+
+ 有一组版本号如下['0.1.1', '2.3.3', '0.302.1', '4.2', '4.3.5', '4.3.4.5']。
+ 现在需要对其进行排序，排序的结果为 
+ ['4.3.5','4.3.4.5','2.3.3','0.302.1','0.1.1']
+
+
+```js
+arr.sort((a, b) => {
+  let i = 0
+  const arr1 = a.split('.')
+  const arr2 = b.split('.')
+
+  while (true) {
+    const s1 = arr1[i]
+    const s2 = arr2[i]
+    i++
+    if (s1 === undefined || s2 === undefined) {
+      return arr2.length - arr1.length
+    }
+    if (s1 === s2) continue
+
+    return s2 - s1
+  }
+})
+```
+
 ## ajax
 
 ```js

@@ -4,7 +4,7 @@
  * 原理：将创建的对象a的隐式原型指向b的显示原型
  */
 function create (obj) {
-  function F () {}
+  function F () { }
   F.prototype = obj
   return new F()
 }
@@ -203,7 +203,7 @@ function mySetinterval (fn, t) {
  */
 
 class EventEmitter {
-  constructor () {
+  constructor() {
     this.event = {}
   }
   // 实现订阅
@@ -306,7 +306,7 @@ Children.prototype.constructor = Children
  */
 
 class Scheduler {
-  constructor (limit) {
+  constructor(limit) {
     this.queue = []
     this.maxCount = limit
     this.runCounts = 0
