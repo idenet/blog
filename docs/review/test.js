@@ -232,3 +232,340 @@ class EventEmitter {
     this.on(type, fn)
   }
 }
+
+/**
+ * 数组去重
+ */
+
+function uniqueArr (arr) {
+  return [...new Set(arr)]
+}
+
+/**
+ * 数组扁平化
+ */
+
+function flatter (arr) {
+  if (!arr.length) return
+  return arr.reduce(
+    (pre, cur) => (Array.isArray(cur) ? [...pre, flatter(cur)] : [...pre, cur]),
+    []
+  )
+}
+
+/**
+ * 迭代的方法实现数组扁平化
+ */
+
+function flatter2 (arr) {
+  if (!arr.length) return
+  while (arr.some(item => Array.isArray(item))) {
+    arr = [].concat(...arr)
+  }
+  return arr
+}
+
+/**
+ * 寄生组合继承
+ */
+
+function Parent (name) {
+  this.name = name
+  this.say = () => {
+    console.log(this.name)
+  }
+}
+
+Parent.prototype.play = () => {
+  console.log(222)
+}
+function Children (name) {
+  Parent.call(this)
+  this.name = name
+}
+Children.prototype = Object.create(Parent.prototype)
+Children.prototype.constructor = Children
+
+/**
+ * 实现有并行限制的promise调度器
+ * 题目描述:JS 实现一个带并发限制的异步调度器 Scheduler，保证同时运行的任务最多有两个
+ *  addTask(1000,"1");
+ addTask(500,"2");
+ addTask(300,"3");
+ addTask(400,"4");
+ 的输出顺序是：2 3 1 4
+
+ 整个的完整执行流程：
+
+一开始1、2两个任务开始执行
+500ms时，2任务执行完毕，输出2，任务3开始执行
+800ms时，3任务执行完毕，输出3，任务4开始执行
+1000ms时，1任务执行完毕，输出1，此时只剩下4任务在执行
+1200ms时，4任务执行完毕，输出4
+
+ */
+
+class Scheduler {
+  constructor (limit) {
+    this.queue = []
+    this.maxCount = limit
+    this.runCounts = 0
+  }
+  add (time, order) {
+    const promiseCreator = () => {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          console.log(order)
+          resolve()
+        }, time)
+      })
+    }
+    this.queue.push(promiseCreator)
+  }
+  taskStart () {
+    for (let i = 0; i < this.maxCount; i++) {
+      this.request()
+    }
+  }
+  request () {
+    if (!this.queue || !this.queue.length || this.runCounts >= this.maxCount)
+      return
+    this.runCounts++
+    this.queue
+      .shift()()
+      .then(() => {
+        this.runCounts--
+        this.request()
+      })
+  }
+}
+
+const scheduler = new Scheduler(2)
+
+const addTask = (time, order) => {
+  scheduler.add(time, order)
+}
+addTask(1000, '1')
+addTask(500, '2')
+addTask(300, '3')
+addTask(400, '4')
+scheduler.taskStart()
+
+/**
+ * 深拷贝
+ */
+
+function isObject (val) {
+  return typeof val === 'object' && val !== null
+}
+
+function deepClone (obj, hash = new WeakMap()) {
+  if (!isObject(obj)) return obj
+  if (hash.has(obj)) {
+    return hash.get(obj)
+  }
+  let target = Array.isArray(obj) ? [] : {}
+  hash.set(obj, target)
+  Reflect.ownKeys(obj).forEach(item => {
+    if (isObject(obj[item])) {
+      target[item] = deepClone(obj[item], hash)
+    } else {
+      target[item] = obj[item]
+    }
+  })
+  return target
+}
+
+/**
+ * 柯里化实现，部分求值，吧接收多个参数的函数转变成接收一个参数的函数
+ *  用法如下：
+ const add = (a, b, c) => a + b + c;
+ const a = currying(add, 1);
+ console.log(a(2,3))
+ */
+
+function curring (fn, ...args) {
+  const length = fn.length
+  let allArgs = [...args]
+  const res = (...newArgs) => {
+    allArgs = [...allArgs, ...newArgs]
+    if (allArgs.length === length) {
+      return fn(...allArgs)
+    } else {
+      return res
+    }
+  }
+  return res
+}
+
+/**
+ * 排序算法
+ * 1. 实现一个冒泡算法
+ *
+ */
+
+function bubbleSort (arr) {
+  // 缓存数组长度
+  const len = arr.length
+  // 外层循环用于从头到尾的比较
+  for (let i = 0; i < len; i++) {
+    // 内层循环用于完成每一轮遍历过程中的重复比较
+    for (let j = 0; j < len - 1; j++) {
+      if (arr[j] > arr[j + 1]) {
+        ;[arr[j], arr[j + 1]] = [arr[j + 1], arr[j]]
+      }
+    }
+  }
+  return arr
+}
+
+/**
+ * 2. 选择排序
+ */
+
+function selectSort (arr) {
+  const len = arr.length
+  let minIndex
+  for (let i = 0; i < len - 1; i++) {
+    minIndex = i
+    for (let j = i; j < len; j++) {
+      if (arr[j] < arr[minIndex]) {
+        minIndex = j
+      }
+    }
+    // 如果minIndex对应元素不是目前的头部元素，则交换两者
+    if (minIndex !== i) {
+      ;[arr[i], arr[minIndex]] = [arr[minIndex], arr[i]]
+    }
+  }
+  return arr
+}
+
+function insertSort (arr) {
+  for (let i = 1; i < arr.length; i++) {
+    let j = i
+    let target = arr[j]
+    while (j > 0 && arr[j - 1] > target) {
+      arr[j] = arr[j - 1]
+      j--
+    }
+    arr[j] = target
+  }
+  return arr
+}
+
+function quickSort (arr) {
+  if (arr.length < 2) {
+    return arr
+  }
+  const cur = arr[arr.length - 1]
+  const left = arr.filter((v, i) => v <= cur && i !== arr.length - 1)
+  const right = arr.filter(v => v > cur)
+  return [...quickSort(left), cur, ...quickSort(right)]
+}
+
+/**
+ * 归并排序
+ */
+function merge (left, right) {
+  let res = []
+  let i = 0
+  let j = 0
+  while (i < left.length && j < right.length) {
+    if (left[i] < right[j]) {
+      res.push(left[i])
+      i++
+    } else {
+      res.push(right[j])
+      j++
+    }
+  }
+  if (i < left.length) {
+    res.push(...left.slice(i))
+  } else {
+    res.push(...right.slice(j))
+  }
+  return res
+}
+
+function mergeSort (arr) {
+  if (arr.length < 2) {
+    return arr
+  }
+  const mid = Math.floor(arr.length / 2)
+  const left = mergeSort(arr.slice(0, mid))
+  const right = mergeSort(arr.slice(mid))
+  return merge(left, right)
+}
+
+/**
+ * 二分查找
+ */
+
+function searchSort (arr, target, start, end) {
+  let targetIndex = -1
+
+  let mid = Math.floor((start + end) / 2)
+
+  if (arr[mid] === target) {
+    targetIndex = mid
+    return targetIndex
+  }
+
+  if (start >= end) {
+    return targetIndex
+  }
+
+  if (arr[mid] < target) {
+    return search(arr, target, mid + 1, end)
+  } else {
+    return search(arr, target, start, mid - 1)
+  }
+}
+
+/**
+ * 实现 lazyMan
+ * 实现一个LazyMan，可以按照以下方式调用:
+LazyMan(“Hank”)输出:
+Hi! This is Hank!
+
+LazyMan(“Hank”).sleep(10).eat(“dinner”)输出
+Hi! This is Hank!
+//等待10秒..
+Wake up after 10
+Eat dinner~
+
+LazyMan(“Hank”).eat(“dinner”).eat(“supper”)输出
+Hi This is Hank!
+Eat dinner~
+Eat supper~
+
+LazyMan(“Hank”).eat(“supper”).sleepFirst(5)输出
+//等待5秒
+Wake up after 5
+Hi This is Hank!
+Eat supper
+ */
+
+/**
+ * 版本号排序的方法
+ * 有一组版本号如下['0.1.1', '2.3.3', '0.302.1', '4.2', '4.3.5', '4.3.4.5']。现在需要对其进行排序，排序的结果为 ['4.3.5','4.3.4.5','2.3.3','0.302.1','0.1.1']
+ */
+
+arr.sort((a, b) => {
+  let i = 0
+  const arr1 = a.split('.')
+  const arr2 = b.split('.')
+
+  while (true) {
+    const s1 = arr1[i]
+    const s2 = arr2[i]
+    i++
+    if (s1 === undefined || s2 === undefined) {
+      return arr2.length - arr1.length
+    }
+    if (s1 === s2) continue
+
+    return s2 - s1
+  }
+})
