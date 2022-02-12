@@ -6,6 +6,7 @@ export const vueSidebar = {
         '/review/html',
         '/review/css',
         '/review/js',
+        '/review/promise',
       ]
     },
   ],

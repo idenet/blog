@@ -211,7 +211,7 @@ function retryRequest (request, count) {
 }
 ```
 
-### 实现有并行限制的 promise 调度器
+## 实现有并行限制的 promise 调度器
 
 题目描述:JS 实现一个带并发限制的异步调度器 Scheduler，保证同时运行的任务最多有两个
 addTask(1000,"1");
@@ -274,7 +274,7 @@ addTask(400, '4')
 scheduler.taskStart()
 ```
 
-### 红绿灯
+## 红绿灯
 
 题目：使用Promise实现红灯每隔3s亮一次，黄灯每隔2s亮一次，绿灯每隔1s亮一次，循环这个过程。
 
