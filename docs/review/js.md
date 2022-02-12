@@ -58,14 +58,13 @@ function myNew(fn, ...rest) {
 function debounce(fn, wait) {
   let timer = null
   return function() {
-    let context = this,
     args = arguments
     if(timer) {
       clearTimeout(timer)
       timer = null
     }
     timer = setTimeout(() => {
-      fn.apply(context, args)
+      fn.apply(this, args)
     }, wait);
   }
 }
@@ -80,12 +79,11 @@ n秒内只会执行一次事件
 function throttle(fn, delay) {
   let curTime = Date.now()
   return function() {
-    let context = this,
       args = arguments,
       nowTime = Date.now()
     if(nowTime - curTime >= delay) {
       curTime = Date.now()
-      return fn.apply(context, args)
+      return fn.apply(this, args)
     }
   }
 }
@@ -266,68 +264,7 @@ Children.prototype = Object.create(Parent.prototype)
 Children.prototype.constructor = Children
 ```
 
-## 实现有并行限制的 promise 调度器
 
-题目描述:JS 实现一个带并发限制的异步调度器 Scheduler，保证同时运行的任务最多有两个
-addTask(1000,"1");
-addTask(500,"2");
-addTask(300,"3");
-addTask(400,"4");
-的输出顺序是：2 3 1 4
-
-整个的完整执行流程：
-
-一开始1、2两个任务开始执行
-500ms时，2任务执行完毕，输出2，任务3开始执行
-800ms时，3任务执行完毕，输出3，任务4开始执行
-1000ms时，1任务执行完毕，输出1，此时只剩下4任务在执行
-1200ms时，4任务执行完毕，输出4
-
-```js
-class Scheduler {
-  constructor(limit) {
-    this.queue = []
-    this.maxCount = limit
-    this.runCounts = 0
-  }
-  add(time, order) {
-    const promiseCreator = () => {
-      return new Promsie((resolve, reject) => {
-        setTimeout(() => {
-          console.log(order)
-          resolve()
-        }, time);
-      })
-    }
-    this.queue.push(promiseCreator)
-  }
-  taskStar() {
-    for(let i=0;i< this.maxCount; i++) {
-      this.request()
-    }
-  }
-  request() {
-       if (!this.queue || !this.queue.length || this.runCounts >= this.maxCount)
-      return
-      this.runCount++
-      this.queue.shift()().then(() => {
-        this.runCount--
-        this.request()
-      })
-  }
-}
-
-const scheduler = new Scheduler(2)
-
-const addTask =(time, order) => {
-  scheduler.add(time, order)
-}
-addTask(1000, '1')
-addTask(500, '2')
-addTask(300, '3')
-addTask(400, '4')
-scheduler.taskStart()
-```
 
 ## 深拷贝
 
@@ -421,6 +358,75 @@ arr.sort((a, b) => {
     return s2 - s1
   }
 })
+```
+
+## 列表转树形结构
+
+[
+    {
+        id: 1,
+        text: '节点1',
+        parentId: 0 //这里用0表示为顶级节点
+    },
+    {
+        id: 2,
+        text: '节点1_1',
+        parentId: 1 //通过这个字段来确定子父级
+    }
+    ...
+]
+
+转成
+[
+    {
+        id: 1,
+        text: '节点1',
+        parentId: 0,
+        children: [
+            {
+                id:2,
+                text: '节点1_1',
+                parentId:1
+            }
+        ]
+    }
+]
+
+```js
+function listToTree(data) {
+  let temp = {}
+  treeData = []
+  for(let i=0;i<data.length;i++) {
+    temp[data[i].id] = data[i]
+  }
+  for(let i in temp) {
+    if(+temp[i].parentId != 0) {
+      if(!temp[temp[i].parentId].children) {
+        temp[temp[i].parentId].children = []
+      }
+      temp[temp[i].parentId].children.push(temp[i])
+    }
+    treeData.push(temp[i])
+  }
+  return treeData
+}
+```
+
+```js
+function treeToList(data) {
+  let res = []
+  const dfs = (tree) => {
+    tree.forEach(item => {
+      if(item.children) {
+        dfs(item.children)
+        delete item.children
+      }
+      res.push(item)
+    })
+  }
+  dfs(data)
+  return res
+}
 ```
 
 ## ajax
