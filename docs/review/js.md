@@ -58,14 +58,13 @@ function myNew(fn, ...rest) {
 function debounce(fn, wait) {
   let timer = null
   return function() {
-    let context = this,
     args = arguments
     if(timer) {
       clearTimeout(timer)
       timer = null
     }
     timer = setTimeout(() => {
-      fn.apply(context, args)
+      fn.apply(this, args)
     }, wait);
   }
 }
@@ -80,12 +79,11 @@ n秒内只会执行一次事件
 function throttle(fn, delay) {
   let curTime = Date.now()
   return function() {
-    let context = this,
       args = arguments,
       nowTime = Date.now()
     if(nowTime - curTime >= delay) {
       curTime = Date.now()
-      return fn.apply(context, args)
+      return fn.apply(this, args)
     }
   }
 }
@@ -215,6 +213,219 @@ class EventEmitter {
     }
     this.on(type, fn)
   }
+}
+```
+
+## 数组去重
+
+```js
+function uniqueArr(arr) {
+  return [...new Set(arr)]
+}
+```
+
+## 数组扁平化
+
+```js
+function flatter(arr) {
+  if(!arr.length) return 
+  return arr.reduce((pre, cur) => (Array.isArray(cur) ? [...pre, flatter(cur)]: [...pre, cur]), [])
+}
+```
+迭代的方法
+```js
+function flatter2(arr) {
+  if(!arr.length) return
+  if(arr.some(item => Array.isArray(item))) {
+    arr = [].concat(...arr)
+  }
+  return arr
+}
+```
+
+## es5 模拟 es6的 继承
+
+```js
+function Parent (name) {
+  this.name = name
+  this.say = () => {
+    console.log(this.name)
+  }
+}
+
+Parent.prototype.play = () => {
+  console.log(222)
+}
+function Children (name) {
+  Parent.call(this)
+  this.name = name
+}
+Children.prototype = Object.create(Parent.prototype)
+Children.prototype.constructor = Children
+```
+
+
+
+## 深拷贝
+
+```js
+function isObject() {
+  return typeof val === 'object' && val !== null
+}
+function deepClone(obj, hash = new WeakMap()) {
+  if(!isObject(obj)) return obj
+  // 已存在
+  if(hash.hah(obj)) {
+    return hash.get(obj)
+  }
+  let target = Array.isArray(obj) ? [] : {}
+  hash.set(obj, target)
+  Reflect.ownKeys(obj).forEach(item => {
+    if (isObject(obj[item])) {
+      target[item] = deepClone(obj[item], hash)
+    } else {
+      target[item] = obj[item]
+    }
+  })
+  return target
+}
+```
+
+## 柯里化
+
+柯里化实现，部分求值，吧接收多个参数的函数转变成接收一个参数的函数
+用法如下：
+const add = (a, b, c) => a + b + c;
+const a = currying(add, 1);
+console.log(a(2,3))
+
+
+```js
+function currying(fn, ...args) {
+  const length = fn.length
+  let allArgs = [...args]
+  const res = (...newArgs) => {
+    allArgs = [...allArgs, ...newArgs]
+    if(allArgs.length === length) {
+      return fn(...allArgs)
+    } else {
+      return res
+    }
+  }
+  return res
+}
+```
+
+升级版：add(1)(2)(3)...(n)
+
+```js
+function add(...args) {
+  let allArgs = [...args]
+  function fn(...newArgs) {
+    allArgs = [...allArgs, ...newArgs]
+    return fn
+  }
+  fn.toString = function () {
+    if(!allArgs.length) return
+    return allArgs.reduce((pre, cur) => pre+cur)
+  }
+  return fn
+}
+```
+
+## 版本号排序
+
+ 有一组版本号如下['0.1.1', '2.3.3', '0.302.1', '4.2', '4.3.5', '4.3.4.5']。
+ 现在需要对其进行排序，排序的结果为 
+ ['4.3.5','4.3.4.5','2.3.3','0.302.1','0.1.1']
+
+
+```js
+arr.sort((a, b) => {
+  let i = 0
+  const arr1 = a.split('.')
+  const arr2 = b.split('.')
+
+  while (true) {
+    const s1 = arr1[i]
+    const s2 = arr2[i]
+    i++
+    if (s1 === undefined || s2 === undefined) {
+      return arr2.length - arr1.length
+    }
+    if (s1 === s2) continue
+
+    return s2 - s1
+  }
+})
+```
+
+## 列表转树形结构
+
+[
+    {
+        id: 1,
+        text: '节点1',
+        parentId: 0 //这里用0表示为顶级节点
+    },
+    {
+        id: 2,
+        text: '节点1_1',
+        parentId: 1 //通过这个字段来确定子父级
+    }
+    ...
+]
+
+转成
+[
+    {
+        id: 1,
+        text: '节点1',
+        parentId: 0,
+        children: [
+            {
+                id:2,
+                text: '节点1_1',
+                parentId:1
+            }
+        ]
+    }
+]
+
+```js
+function listToTree(data) {
+  let temp = {}
+  treeData = []
+  for(let i=0;i<data.length;i++) {
+    temp[data[i].id] = data[i]
+  }
+  for(let i in temp) {
+    if(+temp[i].parentId != 0) {
+      if(!temp[temp[i].parentId].children) {
+        temp[temp[i].parentId].children = []
+      }
+      temp[temp[i].parentId].children.push(temp[i])
+    }
+    treeData.push(temp[i])
+  }
+  return treeData
+}
+```
+
+```js
+function treeToList(data) {
+  let res = []
+  const dfs = (tree) => {
+    tree.forEach(item => {
+      if(item.children) {
+        dfs(item.children)
+        delete item.children
+      }
+      res.push(item)
+    })
+  }
+  dfs(data)
+  return res
 }
 ```
 
