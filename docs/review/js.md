@@ -120,8 +120,8 @@ Function.prototype.myBind = function(context, ...args) {
   context[fn] = this
   let _this = this
   const result = function(...innerArgs) {
-    // 说明是用new了 是 否早函数
-    if(this instanceof _this === true) {
+    // 说明是用new了 是 构造函数
+    if(this instanceof _this) {
       this[fn] = _this // 重新赋值函数
       this[fn](...[...args, ...innerArgs])
     }else {

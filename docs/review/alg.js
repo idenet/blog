@@ -1,44 +1,27 @@
+// 最长公共前缀
 
-// 二叉树
-function treeNode (val) {
-  this.val = val
-  this.left = this.right = null
-}
+const strs = ['flower', 'flow', 'flight']
 
+const longestCommonPrefix = function (strs) {
+  if (!strs.length) return ''
+  if (strs.length == 1) return strs[0]
 
-
-// 二叉树
-const root = {
-  val: "A",
-  left: {
-    val: "B",
-    left: {
-      val: "D"
-    },
-    right: {
-      val: "E"
-    }
-  },
-  right: {
-    val: "C",
-    right: {
-      val: "F"
+  let strTemp = strs[0],
+    strTempLen = strTemp.length,
+    arrLen = strs.length,
+    result = '',
+    flag = 1,
+    charTemp
+  for (let i = 0; i < strTempLen; i++) {
+    charTemp = strTemp[i]
+    for (let j = 1; j < arrLen; j++) {
+      if (charTemp !== strs[j][i]) return result
+      flag++
+      if (flag === arrLen) {
+        flag = 1
+        result += charTemp
+      }
     }
   }
+  return result
 }
-
-// 先序遍历
-
-function preorder (root) {
-  // 递归边界
-
-  if (!root) return
-
-  console.log('输出当前遍历的节点值', root.val)
-  // 递归左子树
-  preorder(root.left)
-  // 递归右子树
-  preorder(root.right)
-}
-
-preorder(root)
