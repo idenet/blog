@@ -57,3 +57,4 @@ const reverseList = function (head) {
   }
   return pre
 }
+
