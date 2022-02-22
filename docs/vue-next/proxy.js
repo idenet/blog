@@ -157,3 +157,30 @@ function cleanup (effectFn) {
   // 重置数组
   effectFn.deps.length = 0
 }
+
+
+/**
+ * 1.3
+ * 在嵌套的effect中，需要数组去存储全局的effect函数，保证嵌套的外层不会被内层覆盖
+ */
+let activeEffect
+// effect 栈
+const effectStack = []
+
+function effect (fn) {
+  const effectFn = () => {
+    // 每次执行的时候，单其实主要是用于在set的时候执行这个effect的时候去清空
+    cleanup(effectFn)
+    activeEffect = effectFn
+    // 存储到栈
+    effectStack.push(effectFn)
+    fn()
+    // 当副作用执行完毕后，将当前副作用函数弹出，并把effect指向原先的值
+    effectStack.pop()
+    activeEffect = effectStack[effectStack.length - 1]
+  }
+  // effectFn.deps用来存储所有与该副作用函数相关联的依赖集合
+  effectFn.deps = []
+  // 执行effectfn
+  effectFn()
+}
