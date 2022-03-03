@@ -118,5 +118,13 @@ export const vueSidebar = {
       text: '类型挑战',
       children: ['/ts/challenge']
     }
+  ],
+  '/difficulty/': [
+    {
+      text: '家庭树/关系树',
+      children: [
+        '/difficulty/relationTree/'
+      ]
+    }
   ]
 }
