@@ -22,10 +22,13 @@ function create(obj) {
 
 ```js
 function myInstance (left, right) {
+  // 获取左侧的隐式原型
   let proto = Object.getPrototypeOf(left)
+  // 获取构造函数的显示原型
   let prototype = right.prototype
   while(true) {
     if(!proto) return false
+    // 隐式原型=== 显示原型则表示在原型链上找到
     if(proto === prototype) return true
     proto = Object.getPrototypeOf(proto)
   }

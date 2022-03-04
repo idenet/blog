@@ -61,3 +61,105 @@ console.log(tree)
 这也就是上面说的每一个小家庭对象，根据上面图片，我们可以看到它有5个小家庭，第一个是`root`最为特殊，他没有父级，这符合家庭树的概念，总有一个祖宗。然后每一个具有母子/父子关系的都是一个小家庭，显而易见了。关键我们要清楚如何计算每个小家庭的`X`和`Y`
 
 ### 家庭的位置
+
+家庭的对象的创建很有意思，主要来看看对于`children`的处理。
+
+```js
+export const createChildUnitsFunc = (store) => {
+    const getSpouseNodes = getSpouseNodesFunc(store);
+    return (familyId, child) => {
+        const { left, middle, right } = getSpouseNodes([child]);
+        return [...toArray(left), middle, ...toArray(right)]
+            .map((nodes) => newUnit(familyId, nodes, true));
+    };
+};
+```
+通过`getSpouseNodes`拿到左中右3个值，这里不贴源码了直接说结果，`left`里面是男方结婚但是离婚或者亡故的，当然如果是古代，代指小老婆也没问题。`middle`里面放置两个人男女婚姻正常状态的，`right`放置女方的上一段婚姻关系。
+这样正常的下一代关系就确立了。最后给每个`node`执行`newUnit`，这个对象主要关注`pos`属性。后面我们要记录偏移量，这个偏移量主要针对小家庭内部，`middle`相对于`left`， `right`相对于`middle`。来看一个最简单的
+
+![图片](../images/difficulty/2.png)
+
+`middle`相对于`left`的`pos`就是`2`。上面说过标准单位是宽度的一半，这里`2`其实就是距离左侧`2*width/2`，就是`width`符合定义。
+
+处理好`root`节点，再来看看每一个`child`节点是怎么处理的，这里需要看看源码
+
+```js
+const getUnitsWithChildren = (family) => (family.children.filter(hasChildren).reverse());
+export const inChildDirection = (store) => {
+    const createFamily = createFamilyFunc(store);
+    const updateFamily = updateFamilyFunc(store);
+    const arrangeFamilies = arrangeFamiliesFunc(store);
+    store.familiesArray
+        .filter(withType(FamilyType.root))
+        .forEach((rootFamily) => {
+        let stack = getUnitsWithChildren(rootFamily);
+        while (stack.length) {
+            const parentUnit = stack.pop();
+            const family = createFamily(nodeIds(parentUnit), FamilyType.child);
+            updateFamily(family, parentUnit);
+            arrangeFamilies(family);
+            store.families.set(family.id, family);
+            stack = stack.concat(getUnitsWithChildren(family));
+        }
+    });
+    return store;
+};
+```
+`getUnitsWithChildren`方法将选出存在子节点并反转，也就是从左侧开始计算，这是合理的。因为左侧的值会改变右侧的值。`createFamily(nodeIds(parentUnit), FamilyType.child);`该方法重走一边上面的过程，但是这时候他是`child`节点。
+
+在`createFamily`方法中和`root`节点不同的是，它存在父节点，我们来看下面这个图片
+
+![图片](../images/difficulty/3.png)
+
+子级的`nodeCount`要比父级大，所以父级节点是要进行偏移的，也就是`diff`的作用。在这个创建的`family`中，`parents`下父节点的`pos`为`1`。
+
+下面来看两个核心方法
+
+```js
+updateFamily(family, parentUnit);
+arrangeFamilies(family);
+```
+先看这个`updateFamily`，入参`family`是创建出来的`child`节点，`parentUnit`是`root`节点下的左侧单元，也就是图片中的`aczw`。该方法主要更新`family`的位置，通过父级的`parentUnit`。
+
+`arrangeFamiliesFunc`通过子级的`family`去循环计算父级的位置。还是以下面例子为例
+
+![图片](../images/difficulty/4.png)
+
+```js
+export const arrangeFamiliesFunc = (store) => ((family) => {
+    let right = 0;
+    while (family.pid) {
+        right = Math.max(right, rightOf(family));
+        const nextFamily = store.getFamily(family.pid);
+        arrangeNextFamily(family, nextFamily, right);
+        arrangeParentsIn(nextFamily);
+        if (!nextFamily.pid)
+            arrangeMiddleFamilies(store.rootFamilies, nextFamily.id, rightOf(nextFamily));
+        family = nextFamily;
+    }
+});
+```
+这个方法还是看一下源码，`right`这个值就是`family`这个节点对于右边来说占据的位置，取的最大值，可以看到是`4`。
+`arrangeNextFamily`干了些啥我们主要看，当有了子节点后的改变。`left`和`middle`的位置都变了。一个是`1`一个是`3`，也就是`middle`的`pos`变成了`3`。
+
+最后判断如果`pid`还存在，就会继续循环，也就是继续改动父级的父级位置。之后就会循环`stack`，流程是一样的。注意这个循环是深度遍历，从右侧到左侧。非常合理。
+
+## 计算每个node的位置
+
+这里我们回过头来看整个库的入口
+
+```js
+export default (nodes, options) => {
+  const store = new Store(nodes, options.rootId)
+  if (options.placeholders) placeholders(store)
+  const families = calcFamilies(store).familiesArray
+  return {
+    families: families,
+    canvas: getCanvasSize(families),
+    nodes: getExtendedNodes(families),
+    connectors: connectors(families)
+  }
+}
+```
+
+通过`getExtendedNodes`方法，确定每个`node`的位置，
