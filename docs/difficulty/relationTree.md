@@ -144,6 +144,43 @@ export const arrangeFamiliesFunc = (store) => ((family) => {
 
 最后判断如果`pid`还存在，就会继续循环，也就是继续改动父级的父级位置。之后就会循环`stack`，流程是一样的。注意这个循环是深度遍历，从右侧到左侧。非常合理。
 
+以上我们就可以总结`family`节点（小家庭）和每个单元节点(left, middle, right)上数据的关系
+
+这里再次看看他的数据结构
+
+```js
+family {
+  id, 
+  type, // root | child
+  main, // true | false
+  Y: 0, // 距离top的距离
+  X: 0, // 距离left的距离
+  parents: [], // 父级node存放
+  children: [
+    {unit}, // left
+    {unit}, // middle
+    {unit} // right
+  ], // 子级node存放
+  pid, // parentFamily id
+}
+unit {
+  fid,
+  child: isChild,
+  nodes: [...nodes],
+  pos: 0,
+}
+```
+`SIZE`是常量为`2`，即相当于一个节点的大小
+
+1. 单元中的`pos`值，比如middle通过`left.pos+nodeCount(left)*SIZE`计算得到
+2. 通过一个`family`中`children`和`parent`的`diff`设置`parents`中`pos`的值
+3. 更新`family`节点中`x,y`的值，通过`parent`节点
+4. 核心方法`arrangeFamiliesFunc`
+   1. 计算该`family`下距离右边的最大距离，`family.x+max((unit.post+nodeCount(parent), (unit.post+nodeCount(children)))`
+   2. `arrangeNextFamily`方法得到父`family`的`X`，并更新`family`中`middle`下`pos`的值
+
+大致流程就是这样，细节上还有很多，主要就是计算完一个`child`需要重复计算它上面的`parent`直到`root`节点
+
 ## 计算每个node的位置
 
 这里我们回过头来看整个库的入口
@@ -162,4 +199,40 @@ export default (nodes, options) => {
 }
 ```
 
-通过`getExtendedNodes`方法，确定每个`node`的位置，
+通过`getExtendedNodes`方法，确定每个`node`的位置，这里我们关注它的核心实现
+
+```js
+const extendNode = (family) => (
+  (unit) => (
+    unit.nodes.map((node, idx) => ({
+      ...node,
+      top: family.Y + (unit.child && !!family.parents.length ? SIZE : 0),
+      left: getUnitX(family, unit) + (idx * SIZE),
+      hasSubTree: hasHiddenRelatives(family, node),
+    }))
+  )
+);
+```
+通过小家庭的`X,Y`的值，`X, Y`的值上面说过就是小家庭本身距离左侧和顶部的值，每个`unit`的定位通过
+`x+unit.pos`就能得到。这里注意下`idx * SIZE`，他其实就是加上了右侧的缺失。比如`middle`为两个右侧的就需要加1，`hasSubTree`是和主树不相关的子树，不用去考虑。
+
+`top`的计算只要知道一点，在小家庭中如果是子`family`并且存在`parents`就表明他需要增加`SIZE`的高度
+
+## 计算连接器
+
+这块的难度也非常大，源码重构后也很复杂，如果有兴趣可单步调试看看。这里只总结，看下面代码
+
+```js
+const toConnectors = (families) => (fn) => fn(families);
+export const connectors = (families) => ([parents, middle, children].map(toConnectors(families)).flat());
+```
+在这里`parents, middle, children`是在三个方法，前两个处理的都是根节点和`parent`相关的代码，先略过不看，主要是看`children`的处理，它分为以下几步
+
+1. 父母到子女，处理那条竖线
+2. 孩子到父母，这块会保存一个值是用来画水平线进行孩子和父母的链接
+   1. 儿童上方的水平，也就是链接父母子女
+3. `unit`是夫妻的情况，这种只要中间连线
+4. 孩子与孩子的配偶之间，也就是说存在离婚情况的。
+
+
+这样对这个库也算初步了解了。很复杂，不过水平真的很高。关键还是每个小家庭的计算，和对于整个结构取巧的处理，使得整个计算量大减。
