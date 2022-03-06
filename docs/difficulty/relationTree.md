@@ -30,6 +30,7 @@ import calcTree from 'relatives-tree';
 const tree = calcTree(json, { rootId });
 console.log(tree)
 ```
+
 拿到以下数据
 
 ```js
@@ -40,6 +41,7 @@ console.log(tree)
   nodes: []
 }
 ```
+
 `canvas`就放着容器的宽高，`connectors`放着每条线该怎么画，`nodes`应该就是存放节点的位置。`families`对使用者来说没什么用，但其实在源码中是另外三个的核心，它存放着每一个小家庭。
 
 这里先要明确一点，根据他给的`demo`库计算得到的数字，都是节点宽高一半的倍数，为何这么设计？想想一个最简单的一胎家庭，`parents`存在两个节点，`children`只有一个，那么`chilren`为了好看就会移动到`parents`两个节点的中间，也就是`x`会移动一半。那么以一半为倍数，也是为了方便计算。
@@ -58,6 +60,7 @@ console.log(tree)
   pid, // parentFamily id
 }
 ```
+
 这也就是上面说的每一个小家庭对象，根据上面图片，我们可以看到它有5个小家庭，第一个是`root`最为特殊，他没有父级，这符合家庭树的概念，总有一个祖宗。然后每一个具有母子/父子关系的都是一个小家庭，显而易见了。关键我们要清楚如何计算每个小家庭的`X`和`Y`
 
 ### 家庭的位置
@@ -74,6 +77,7 @@ export const createChildUnitsFunc = (store) => {
     };
 };
 ```
+
 通过`getSpouseNodes`拿到左中右3个值，这里不贴源码了直接说结果，`left`里面是男方结婚但是离婚或者亡故的，当然如果是古代，代指小老婆也没问题。`middle`里面放置两个人男女婚姻正常状态的，`right`放置女方的上一段婚姻关系。
 这样正常的下一代关系就确立了。最后给每个`node`执行`newUnit`，这个对象主要关注`pos`属性。后面我们要记录偏移量，这个偏移量主要针对小家庭内部，`middle`相对于`left`， `right`相对于`middle`。来看一个最简单的
 
@@ -105,6 +109,7 @@ export const inChildDirection = (store) => {
     return store;
 };
 ```
+
 `getUnitsWithChildren`方法将选出存在子节点并反转，也就是从左侧开始计算，这是合理的。因为左侧的值会改变右侧的值。`createFamily(nodeIds(parentUnit), FamilyType.child);`该方法重走一边上面的过程，但是这时候他是`child`节点。
 
 在`createFamily`方法中和`root`节点不同的是，它存在父节点，我们来看下面这个图片
@@ -119,6 +124,7 @@ export const inChildDirection = (store) => {
 updateFamily(family, parentUnit);
 arrangeFamilies(family);
 ```
+
 先看这个`updateFamily`，入参`family`是创建出来的`child`节点，`parentUnit`是`root`节点下的左侧单元，也就是图片中的`aczw`。该方法主要更新`family`的位置，通过父级的`parentUnit`。
 
 `arrangeFamiliesFunc`通过子级的`family`去循环计算父级的位置。还是以下面例子为例
@@ -139,6 +145,7 @@ export const arrangeFamiliesFunc = (store) => ((family) => {
     }
 });
 ```
+
 这个方法还是看一下源码，`right`这个值就是`family`这个节点对于右边来说占据的位置，取的最大值，可以看到是`4`。
 `arrangeNextFamily`干了些啥我们主要看，当有了子节点后的改变。`left`和`middle`的位置都变了。一个是`1`一个是`3`，也就是`middle`的`pos`变成了`3`。
 
@@ -170,6 +177,7 @@ unit {
   pos: 0,
 }
 ```
+
 `SIZE`是常量为`2`，即相当于一个节点的大小
 
 1. 单元中的`pos`值，比如middle通过`left.pos+nodeCount(left)*SIZE`计算得到
@@ -213,6 +221,7 @@ const extendNode = (family) => (
   )
 );
 ```
+
 通过小家庭的`X,Y`的值，`X, Y`的值上面说过就是小家庭本身距离左侧和顶部的值，每个`unit`的定位通过
 `x+unit.pos`就能得到。这里注意下`idx * SIZE`，他其实就是加上了右侧的缺失。比如`middle`为两个右侧的就需要加1，`hasSubTree`是和主树不相关的子树，不用去考虑。
 
@@ -226,6 +235,7 @@ const extendNode = (family) => (
 const toConnectors = (families) => (fn) => fn(families);
 export const connectors = (families) => ([parents, middle, children].map(toConnectors(families)).flat());
 ```
+
 在这里`parents, middle, children`是在三个方法，前两个处理的都是根节点和`parent`相关的代码，先略过不看，主要是看`children`的处理，它分为以下几步
 
 1. 父母到子女，处理那条竖线
@@ -233,6 +243,5 @@ export const connectors = (families) => ([parents, middle, children].map(toConne
    1. 儿童上方的水平，也就是链接父母子女
 3. `unit`是夫妻的情况，这种只要中间连线
 4. 孩子与孩子的配偶之间，也就是说存在离婚情况的。
-
 
 这样对这个库也算初步了解了。很复杂，不过水平真的很高。关键还是每个小家庭的计算，和对于整个结构取巧的处理，使得整个计算量大减。

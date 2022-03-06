@@ -52,7 +52,6 @@ function myNew(fn, ...rest) {
 }
 ```
 
-
 ## 防抖函数实现
 
 在n秒内触发事件后，如果再次触发会重新计算时间
@@ -72,7 +71,6 @@ function debounce(fn, wait) {
   }
 }
 ```
-
 
 ## 节流函数的实现
 
@@ -138,6 +136,7 @@ Function.prototype.myBind = function(context, ...args) {
 ## 实现一个compose函数
 
 用法如下
+
 ```js
 function fn1 (x) {
   return x + 1
@@ -155,6 +154,7 @@ const a = compose(fn1, fn2, fn3, fn4)
 
 console.log(a(1)) // 1+4+3+2+1=11
 ```
+
 实现
 
 ```js
@@ -235,7 +235,9 @@ function flatter(arr) {
   return arr.reduce((pre, cur) => (Array.isArray(cur) ? [...pre, flatter(cur)]: [...pre, cur]), [])
 }
 ```
+
 迭代的方法
+
 ```js
 function flatter2(arr) {
   if(!arr.length) return
@@ -266,8 +268,6 @@ function Children (name) {
 Children.prototype = Object.create(Parent.prototype)
 Children.prototype.constructor = Children
 ```
-
-
 
 ## 深拷贝
 
@@ -301,7 +301,6 @@ function deepClone(obj, hash = new WeakMap()) {
 const add = (a, b, c) => a + b + c;
 const a = currying(add, 1);
 console.log(a(2,3))
-
 
 ```js
 function currying(fn, ...args) {
@@ -339,9 +338,8 @@ function add(...args) {
 ## 版本号排序
 
  有一组版本号如下['0.1.1', '2.3.3', '0.302.1', '4.2', '4.3.5', '4.3.4.5']。
- 现在需要对其进行排序，排序的结果为 
+ 现在需要对其进行排序，排序的结果为
  ['4.3.5','4.3.4.5','2.3.3','0.302.1','0.1.1']
-
 
 ```js
 arr.sort((a, b) => {
