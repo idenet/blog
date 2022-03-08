@@ -36,6 +36,7 @@
 </body>
 </html>
 ```
+
 查看源码，我们现在先分析首次执行，`computed`是如何做的。
 
 ## 首次执行
@@ -63,6 +64,7 @@ export function initState (vm: Component) {
   }
 }
 ```
+
 我们主要看 `initComputed`是如何执行的。
 
 ```js
@@ -121,6 +123,7 @@ function initComputed (vm: Component, computed: Object) {
   }
 }
 ```
+
 上面写的非常清楚，整个代码分为三块内容
 
 1. 创建一个`watchers = vm._computedWatchers = null`
@@ -141,6 +144,7 @@ watchers[key] = new Watcher(
   computedWatcherOptions
 )
 ```
+
 ```js
 export default class Watcher {
   constructor (
@@ -196,11 +200,13 @@ export default class Watcher {
       : this.get()
   }
 ```
+
 在`new Watcher`的时候它传递了四个参数，首先看第四个参数，`computedWatcherOptions`，它是一个`options`。我们看看这个东西是什么
 
 ```js
 const computedWatcherOptions = { lazy: true }
 ```
+
 将`lazy`赋值给`true`，然后在`watcher`构造函数中将`this.dirty = this.lazy = true`。它和在`mountComponent`定义的`Wacher`不同
 具备不同的属性，所以用他的`options`命名，计算`Wacher`。
 
@@ -247,6 +253,7 @@ export function defineComputed (
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 ```
+
 这里我们只要看`sharedPropertyDefinition`用的是什么`get`和`set`就可以了。
 
 1. 当`userDef`是一个方法时，在非服务端渲染环境下使用`createComputedGetter(userDef)`，并且`set`是一个空函数
@@ -275,8 +282,10 @@ function createComputedGetter (key) {
   }
 }
 ```
+
 执行了`createComputedGetter(key)`方法，然后返回了`computedGetter`，我们定义的`get`是`computedGetter`方法，并且使用闭包，缓存了起来。
 根据例子`defineComputed`执行后的效果是
+
 ```js
 Object.defineProperty(vm, 'compA', {
   configurable: true,
@@ -285,6 +294,7 @@ Object.defineProperty(vm, 'compA', {
   set: () => {},
 })
 ```
+
 我们在实例上，创建了一个对`compA`的拦截器。这样`initComputed`就结束了。
 
 ## 生成执行执行函数
@@ -312,7 +322,9 @@ export function mountComponent (
     return vm
 }
 ```
+
 这里`lazy`为`false`，所以构造函数初始化完成最后会执行`this.get()`
+
 ```js
 get () {
  ... 
@@ -321,6 +333,7 @@ get () {
  return value
 }
 ```
+
 不看其他代码，核心就是执行了`this.getter`，这个在构造函数中有赋值，就是`updateComponent`。
 所以我们执行了`vm._update(vm._render(), hydrating)`。首先看`vm._render`方法，它定义在`render.js`中。
 现在它的关键就两行代码。
@@ -338,6 +351,7 @@ Vue.prototype._render = function (): VNode {
   return vnode
 }
 ```
+
 1. 从 `vm.$options` 中获取 `render`。
 2. 执行`render`方法。并传入当前实例，和`vm.$createElement`，`vm.$createElement`是`initRender`时候定义的`createElement`
 
@@ -379,7 +393,9 @@ Vue.prototype.$mount = function (
   return mount.call(this, el, hydrating)
 }
 ```
+
 这里我们拿到了`render`，并赋值给了`this.$options`。所以上面我们才可以拿到，我们再进去看`compileToFunctions`，层层向上找，我们来到了
+
 ```js
 export const createCompiler = createCompilerCreator(function baseCompile (
   template: string,
@@ -400,13 +416,17 @@ export const createCompiler = createCompilerCreator(function baseCompile (
   }
 })
 ```
+
 这里是解析`html`的核心，里面`vue`运用了函数柯里化的方法将解析和一些错误判断进行了隔离，我们在`code`之后打个`debugger`。直接看`template`的最终生成
+
 ```js
 with(this){
   return _c('div',{attrs:{\"id\":\"app\"}},[_c('div',[_v(_s(compA))])])
 }
 ```
+
 这是我们例子的代码`code`字符串，之后通过`new Function(code)`就拿到了一个匿名函数
+
 ```js
 ;(function anonymous () {
   with (this) {
@@ -414,9 +434,11 @@ with(this){
   }
 })
 ```
+
 ## 执行匿名函数
 
 这里注意一下，在开发环境`vm._renderProxy`是一个`proxy`代理，或者`vm`。在正式环境它就是`vm`。
+
 ```js
 // Vue.prototype._init方法中
 /* istanbul ignore else */
@@ -429,8 +451,10 @@ with(this){
    vm._renderProxy = vm
  }
 ```
+
 好那么现在我们开始执行，首先我们先来了解一下`_c、_v、_s`分别是什么。`_c`我们可以在`initRender`中看到，它就是`createElement`返回一个Vnode。
 其他我们可以在`instance/render-helpers/index.js`中看到。
+
 ```js
 // 返回Vnode
 _c = createElement(vm, a, b, c, d, false)
@@ -439,11 +463,13 @@ _v = createTextVNode
 // 转为字符串
 _s = toString
 ```
+
 我们主要看 `toString`的执行中`compA`的执行，也就是我们运行了`this['compA']`。因为上面定义了拦截器，所以我们会执行到`computedGetter`。
 
 ## 开始真正的computed执行
 
-###  执行 watcher.evaluate()
+### 执行 watcher.evaluate()
+
 因为我们缓存了之前的`key`，所以们在当前实例下面，拿到了之前`new`的计算`Watcher`。第一次，我们执行`watcher.evaluate()`注意这时候的`watcher`是计算`watcher`。
 
 ```js
@@ -462,13 +488,16 @@ return function computedGetter () {
  }
 }
 ```
+
 这时候我们执行了`this.get()`。从上面分析可知，执行`this.get()`就是执行`this.getter`，也就是初始化传入的求值表达式，`computed`的求值表达式是
+
 ```js
 evaluate () {
  this.value = this.get()
  this.dirty = false
 }
 ```
+
 可以清晰的看到，这时候我们触发了`this.a`。根据响应式原理，这里我们将触发`data`中早已定义好的拦截器`get`。进行响应式依赖的收集，将我们的计算`Watcher`, 放到了`dep.subs`中。
 这里我不详细说明`data`的响应式收集过程了。等下一篇文章关于`data`再分析。我们只要知道`a`的`dep`数组中存放了计算`Watcher`。然后把 `dirty = false`。`watcher.evaluate()`执行完成。
 
@@ -477,6 +506,7 @@ function () {
  return this.a + 1
 }
 ```
+
 ### 执行 watcher.depend()
 
 执行`watcher.depend()`之前，我们想一想`Dep.target`是什么？
@@ -510,6 +540,7 @@ export function popTarget () {
   Dep.target = targetStack[targetStack.length - 1]
 }
 ```
+
 首先我们全局维护了`targetStack`和`Dep.target`。在我们初始化`vue`如果不存在`computed`，我们的`Dep.target`就指向渲染`Watcher`。`targetStack`也保存着它。
 但是在执行`watcher.evaluate()`的时候，我们用的是保存在`this._computedWatchers`中的计算`Watcher`。这时候通过第一个方法，我们`push`到了`targetStack`，但是在求值完成之后，
 我们`popTarget`了当前的`Watcher`。这时候，当前的`Watcher`就变成了渲染`Watcher`。
@@ -524,8 +555,10 @@ depend () {
  }
 }
 ```
+
 这个`this.deps`我们保存着计算`Watcher`。它的长度为1，好我们再次执行了依赖收集，但是当前`Watcher`是渲染`watcher`。这个上面已经分析过了，在执行完成依赖收集之后我们可以看到
 当前的`a`中的`Dep`实例下的`subs`数组中保存了两个`Watcher`。
+
 ```js
 {
   id: 3,
@@ -535,6 +568,7 @@ depend () {
   ]
 }
 ```
+
 之后我们返回了`watcher.value`，也就是计算`Watcher`求值之后的值，之后就是`vm._update`的执行，将`vnode`渲染到页面上。首次渲染完成
 
 ## 来思考一些问题
@@ -578,6 +612,7 @@ depend () {
 对我们再次放了一个`compA`上去，第二次执行`this['compA']`有什么不同?
 
 首先我们清楚一点在计算`Watcher`中，我们定义了两个属性`dirty=lazy=true`。但是在第一次求值过程中我们将`dirty`赋值为了`false`。
+
 ```js
 evaluate () {
  this.value = this.get()
@@ -587,6 +622,7 @@ if (watcher.dirty) {
   watcher.evaluate()
 }
 ```
+
 因此我们在第二次执行的时候，`watcher.dirty`为`false`，所以他不会执行。这就是闭包的好处。而执行`watcher.depend`的是时候，它的重复收集和`addDep`方法相关
 
 ```js
@@ -597,8 +633,8 @@ addDep (dep: Dep) {
  }
 }
 ```
-这里会判断`this.newDepIds`中是否存在当前的依赖`id`，同一个显然是相当的，所以直接返回。这就是缓存的实现。关于这块的去重问题，等之后响应式`data`的解析吧。
 
+这里会判断`this.newDepIds`中是否存在当前的依赖`id`，同一个显然是相当的，所以直接返回。这就是缓存的实现。关于这块的去重问题，等之后响应式`data`的解析吧。
 
 ## 更新数据
 
@@ -617,6 +653,7 @@ notify () {
  }
 }
 ```
+
 从上面可以看出，我们顺序执行`Watcher`的`update`方法。来看看`update`方法的实现
 
 ```js{3-4}
@@ -633,6 +670,7 @@ update () {
  }
 }
 ```
+
 从上面我们知道，第一个`Watcher`是计算`Watcher`，所以它的`lazy`是`true`，在这个代码段中，只执行了
 `this.dirty=true`，**为什么要执行这一步，结合第一次赋值为`false`想一想**。好我这里先卖个关子。
 
@@ -647,6 +685,7 @@ update () {
 为什么要给`this.dirty`赋值为`true`?
 
 要解答这个问题，我们先来看最新的例子的匿名执行代码
+
 ```js
 ;(function anonymous () {
   with (this) {
@@ -658,6 +697,7 @@ update () {
   }
 })
 ```
+
 可以发现我们执行了两次`this['compA']`，那么整体流程就显而易见了
 
 第一次执行`this['compA']`
@@ -682,6 +722,7 @@ addDep (dep: Dep) {
  }
 }
 ```
+
 `depIds`保存的是上一次的依赖，每一个`Dep`都会存有一个唯一的`id`，计算的值没变，所以上一次和这一次是一致的。依赖不会保存。这里仍旧和`data`的初始化相关。
 
 然后第二个`this['compA']`进来就和初始化一样了。
@@ -691,4 +732,3 @@ addDep (dep: Dep) {
 这样我们就彻底解析了`computed`的核心实现，也解答了官网的话。如果是增加依赖执行也并无不同。最后再来看一下整个流程图
 
 ![computed](../../images/vue/initComputed.png)
-

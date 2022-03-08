@@ -35,9 +35,8 @@ function vuexInit () {
   const options = this.$options
   // store injection
   if (options.store) {
-    this.$store = typeof options.store === 'function'
-      ? options.store()
-      : options.store
+    this.$store =
+      typeof options.store === 'function' ? options.store() : options.store
   } else if (options.parent && options.parent.$store) {
     this.$store = options.parent.$store
   }
@@ -72,6 +71,7 @@ register (path, rawModule, runtime = true) {
   }
 }
 ```
+
 该方法首先将`options`通过`new Module`存放到`root`，相当于给`options`存了一个副本。如果用户使用了`module`就通过循环再次注册这时候会吧`module`放到`_children`下面
 这时候`root`的值为
 
@@ -90,6 +90,7 @@ this.root = {
   }
 }
 ```
+
 之后就是核心`installModule`，这个方法主要注册了`mutation、action、getter、module`.
 
 ```js
@@ -132,6 +133,7 @@ function installModule (store, rootState, path, module, hot) {
   })
 }
 ```
+
 ### local
 
 ```js
@@ -155,6 +157,7 @@ Vue.set(parentState, 'a', { count: 0 })
 // 设置B模块的state
 Vue.set(parentState, 'b', { count: 0 })
 ```
+
 通过`namespace`的方法，即使模块中属性名字相同也不会冲突。
 
 更重要的是我们知道，`state`修改会触发组件重新渲染，是响应式的。其实关于响应式的定义，在`resetStoreVM`方法中
@@ -163,24 +166,27 @@ Vue.set(parentState, 'b', { count: 0 })
 store._vm = new Vue({
   data: {
     $$state: state
-  },
+  }
 })
 ```
+
 这个传入的`state`就是初始化好的`state`。
 
 ### Mutation 初始化
 
 ```js
- module.forEachMutation(function (mutation, key) {
+module.forEachMutation(function (mutation, key) {
   var namespacedType = namespace + key
   registerMutation(store, namespacedType, mutation, local)
 })
 ```
+
 看上面这段代码，通过`module`的循环，拿到`key`，然后组装成`namespacedType`，对于上面的例子
 
 ```js
 namespacedType = 'a/increment'
 ```
+
 然后看`registerMutation`方法，给`store._mutations`数组中添加了一个`wrappedMutationHandler`方法，最终会执行传入的`mutation`
 也就是说最后会被组和成
 
@@ -219,6 +225,7 @@ function registerAction (store, type, handler, local) {
   })
 }
 ```
+
 可以看到结果用`Promsie.resolve`进行包裹，且他可以获取的入参更多。最终获取的是
 
 ```js
@@ -229,7 +236,7 @@ store = {
 }
 ```
 
-### Getters初始化和响应式
+### Getters 初始化和响应式
 
 循环也是一样就不说了，但是注册会有很大不同
 
@@ -251,10 +258,9 @@ function registerGetter (store, type, rawGetter, local) {
   }
 }
 ```
+
 有意思的是，我们在这里可以获取四个参数。并且我们在查看`resetStoreVM`的时候可以看到，它将`_wrappedGetters`转换成了`computed`放到了`store._vm`实例化的`vue`的`computed`中实现响应式，
 并且对`store.getters`进行了拦截，响应到了`store._vm`
-
-
 
 ## 使用
 
@@ -268,9 +274,9 @@ normalizeMap([1, 2, 3]) => [ { key: 1, val: 1 }, { key: 2, val: 2 }, { key: 3, v
 normalizeMap({a: 1, b: 2, c: 3}) => [ { key: 'a', val: 1 }, { key: 'b', val: 2 }, { key: 'c', val: 3 } ]
 ```
 
-### state的使用和mapState
+### state 的使用和 mapState
 
-在我们的使用过程中，最终其实是调用的`computed`，`computed`会调用` watcher.evaluate()`执行到`this.getter.call(vm, vm)`，那也就是定义返回的`mapState`函数
+在我们的使用过程中，最终其实是调用的`computed`，`computed`会调用`watcher.evaluate()`执行到`this.getter.call(vm, vm)`，那也就是定义返回的`mapState`函数
 
 ```js
 function mappedState () {
@@ -284,11 +290,10 @@ function mappedState () {
     state = module.context.state
     getters = module.context.getters
   }
-  return typeof val === 'function'
-    ? val.call(this, state, getters)
-    : state[val]
+  return typeof val === 'function' ? val.call(this, state, getters) : state[val]
 }
 ```
+
 因为是模块内，`module.context`其实就是之前定义的`makeLocalContext(store, namespace, path)`，在这里面有个`state`和
 `getters`拦截器。这里会触发依赖收集，并且最终返回`state[val]`
 
@@ -297,7 +302,7 @@ function mappedState () {
 这个其实和`state`是一样的，`state`因为只是一个值，或者有可能是一个方法，所以它的返回需要包裹，但是`getters`必须是一个方法，
 所以它只要正确的返回`key`对应的`val`给`computed`去执行就可以了，所以它的`mapGetters`很简单 不赘述
 
-### mutations 、actions 和 mapMutations 、mapActions的使用
+### mutations 、actions 和 mapMutations 、mapActions 的使用
 
 ```js
 function mappedMutation (...args) {
@@ -314,6 +319,7 @@ function mappedMutation (...args) {
     : commit.apply(this.$store, [val].concat(args))
 }
 ```
+
 和前面类似，如果是`module`就调用`local`中的 `commit`方法，如果不是就调用构造函数中申明的`commit`。在`local`的`commit`就是通过
 `namespace`拿到对应的发行，最终还是调用`commit`函数
 
