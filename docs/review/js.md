@@ -77,15 +77,16 @@ function debounce(fn, wait) {
 n秒内只会执行一次事件
 
 ```js
-function throttle(fn, delay) {
-  let curTime = Date.now()
-  return function() {
-      args = arguments,
-      nowTime = Date.now()
-    if(nowTime - curTime >= delay) {
-      curTime = Date.now()
-      return fn.apply(this, args)
-    }
+function throttle (fn, delay) {
+  let flag = true
+  return function () {
+    let args = arguments
+    if (!flag) return
+    flag = false
+    setTimeout(() => {
+      fn.apply(this, args)
+      flag = true
+    }, delay)
   }
 }
 ```
