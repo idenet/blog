@@ -40,7 +40,6 @@
 
 ## 插槽的编译
 
-
 `vue`的编译分为三步
 
 1. `parse`：将`html`转换成`AST`树
@@ -76,6 +75,7 @@ function processSlotContent (el) {
   }
 }
 ```
+
 这里我们先记录一下，`el`当前的对象中`attrsList`的值
 
 ```js
@@ -88,7 +88,9 @@ el: {
   }]
 }
 ```
+
 然后直接跳过`getAndRemoveAttrByRegex`方法查看新值和返回值，`attrsList`被清空了，并且我们拿到了里面的值
+
 ```js
 {
  end: 68,
@@ -97,6 +99,7 @@ el: {
  value: ""
 }
 ```
+
 `getSlotName`方法拿到`name`值，这个值是`header`。并且这里也会判断是不是动态`slot`和新增特性相关。
 最后`vue`赋值了三个属性
 
@@ -105,6 +108,7 @@ slotScope: "_empty_"
 slotTarget: "\"header\""
 slotTargetDynamic: false
 ```
+
 这里我们还要去`closeElement`方法看一下
 
 ```js
@@ -129,6 +133,7 @@ function closeElement (element) {
  element.children = element.children.filter(c => !c.slotScope)
 }
 ```
+
 在执行完`processElement`之后，我们看上面的代码，`currentParent`在`start`钩子函数中赋值，拿到是当前的`element`的父级。
 
 这里我们看到将当前`element`元素放到了`currentParent`的`scopedSlots`和`children`。
@@ -142,8 +147,6 @@ element.children = element.children.filter(c => !c.slotScope)
 ```
 
 这样父组件内的第一个`v-slot`就解析完毕了。
-
-
 
 好，我们看最终生成的`AST`，父组件是这样的
 
@@ -161,6 +164,7 @@ const ast = {
   ]
 }
 ```
+
 **什么时候进入子组件？**
 
 只要看`el.tag`是否是`app-layout`就行。好，开始执行子组件解析的时候，我们进入`processSlotOutlet`
@@ -172,6 +176,7 @@ function processSlotOutlet (el) {
   }
 }
 ```
+
 这里主要是赋值了`slotName`。这个就很简单，我们直接看子组件的`AST`
 
 ```js
@@ -206,6 +211,7 @@ export function genData (el: ASTElement, state: CodegenState): string {
   return data
 }
 ```
+
 看上面父组件的`AST`，我们要拿到`children`才会走上面的逻辑，所以直接跳到子`el`。进入`genScopedSlots`。
 
 ```js
@@ -228,6 +234,7 @@ function genScopedSlots (
   })`
 }
 ```
+
 前面是关于在`v-slots`中使用`v-if`的优化。`genScopedSlot`就是每一个`v-slot`生成的过程，里面就不进去看了，也是很简单的判断和字符串拼接，我们直接看结果。
 
 ```js
@@ -237,8 +244,10 @@ function genScopedSlots (
   {key:"footer",fn:function(){return [_v("底部内容")]},proxy:true}])
 }
 ```
+
 父组件返回的字符串结果如图，我们看子组件。在子组件中，它的`AST`关键在于`el.tag=slot`
 所以我们看的是
+
 ```js
 export function genElement (el: ASTElement, state: CodegenState): string {
   if (el.parent) {
@@ -249,6 +258,7 @@ export function genElement (el: ASTElement, state: CodegenState): string {
   return code
 }
 ```
+
 所以我们就可以拿到它的`code`
 
 ```js
@@ -289,7 +299,9 @@ export function resolveScopedSlots (
   return res
 }
 ```
+
 看这个方法，`fns`就是我们上面通过`_u([...])`传入的数组，并且`vue`给`slots.fn.proxy=true`。最终的返回是
+
 ```js
 res: {
   default: fn(),
@@ -319,6 +331,7 @@ export function renderSlot (
   return nodes
 }
 ```
+
 唉，我们这里看到`this.$scopedSlots`里面好像存着，父组件上面解析好的`slots`这是为什么，哪里赋值的呢？
 
 我们回过头来看一段代码，在`Vue.prototype._render`方法中
@@ -381,6 +394,7 @@ Vue.prototype._render = function (): VNode {
  })
 </script>
 ```
+
 例子很简单，这次我们不一步步分析了，直接来看父组件和子组件的最终`code`
 
 ```js
@@ -388,6 +402,7 @@ scopedSlots:_u([
   {key:"header",fn:function(props){return [_v("头部内容 "+_s(props.msg))]}},{key:"default",fn:function(props){return [_v("默认内容 "+_s(props.msg))]}},{key:"footer",fn:function(props){return [_v("底部内容 "+_s(props.msg))]}}
 ])
 ```
+
 不同点在于，方法中传了参数，并且调用了`_s`。
 
 再看子组件
@@ -397,6 +412,7 @@ scopedSlots:_u([
 _c('main',[_t("default",null,{"msg":msg2})],2),
 _c('footer',[_t("footer",null,{"msg":msg3})],2)]
 ```
+
 这里我们传入了多个参数，那么很简单，我们去看`resolveScopedSlots`和`renderSlot`方法。
 前者没什么不同，还是把数组形式转换成了对象形式。看`renderSlot`方法。
 
@@ -409,10 +425,8 @@ nodes = scopedSlotFn(props)
 
 因为上面的依赖收集，当我们修改`msg1`的时候，就会触发子组件更新，这时候就会重新调用`_t`执行一遍
 
-
 ## 总结
 
 插槽就是一段函数，可以看到，父组件里面的模板是父级作用域编译的，子组件通过拿到`scopedSlots`执行里面的方法，然后在子组件生成`vnode`渲染了真实`dom`。那么也就是官网中的话
 
 **父级模板里的所有内容都是在父级作用域中编译的；子模板里的所有内容都是在子作用域中编译的**
-
