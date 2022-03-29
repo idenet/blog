@@ -273,7 +273,7 @@ Children.prototype.constructor = Children
 ## 深拷贝
 
 ```js
-function isObject() {
+function isObject(val) {
   return typeof val === 'object' && val !== null
 }
 function deepClone(obj, hash = new WeakMap()) {
@@ -323,16 +323,9 @@ function currying(fn, ...args) {
 
 ```js
 function add(...args) {
-  let allArgs = [...args]
-  function fn(...newArgs) {
-    allArgs = [...allArgs, ...newArgs]
-    return fn
-  }
-  fn.toString = function () {
-    if(!allArgs.length) return
-    return allArgs.reduce((pre, cur) => pre+cur)
-  }
-  return fn
+  const func = add.bind(null, ...args) // bind 保存链式调用的参数
+  func.toString = () => params.reduce((prev, cur) => (prev+=cur), 0) // ==会隐式转换 调用 toString
+  return func
 }
 ```
 
@@ -586,4 +579,10 @@ var s1 = new Student('Tom', 20, 15000)
 console.log(s1 instanceof Student, s1 instanceof Person) // true true
 console.log(s1.constructor) //Student
 console.log(s1)
+```
+
+## 手写 promise.all
+
+```js
+
 ```
