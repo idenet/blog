@@ -581,8 +581,3 @@ console.log(s1.constructor) //Student
 console.log(s1)
 ```
 
-## 手写 promise.all
-
-```js
-
-```
