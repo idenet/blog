@@ -324,7 +324,7 @@ function currying(fn, ...args) {
 ```js
 function add(...args) {
   const func = add.bind(null, ...args) // bind 保存链式调用的参数
-  func.toString = () => params.reduce((prev, cur) => (prev+=cur), 0) // ==会隐式转换 调用 toString
+  func.toString = () => args.reduce((prev, cur) => (prev+=cur), 0) // ==会隐式转换 调用 toString
   return func
 }
 ```
