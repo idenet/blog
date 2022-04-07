@@ -355,6 +355,44 @@ arr.sort((a, b) => {
 })
 ```
 
+## LRU Cache 算法
+
+在`Vue`的 `keep-alive`中的源码有使用
+
+```js
+class LRUCache {
+  constructor (capacity) {
+    this.secretKey = new Map()
+    this.capacity = capacity
+  }
+  get (key) {
+    if (this.secretKey.has(key)) {
+      let tempValue = this.secretKey.get(key)
+      this.secretKey.delete(key)
+      this.secretKey.set(key, tempValue)
+      return tempValue
+    } else {
+      return -1
+    }
+  }
+
+  put (key, value) {
+    // 存在当前 key ： 删除后重新设置
+    if (this.secretKey.has(key)) {
+      this.secretKey.delete(key)
+      this.secretKey.set(key, value)
+    }
+    // 不存在当前 key ，第一种未满，啧直接添加，第二种已满，删除第一个添加
+    else if (this.secretKey.size < this.capacity) {
+      this.secretKey.set(key, value)
+    } else {
+      this.secretKey.delete(this.secretKey.keys().next().value)
+      this.secretKey.set(key, value)
+    }
+  }
+}
+```
+
 ## 列表转树形结构
 
 [
