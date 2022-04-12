@@ -38,13 +38,13 @@ function myInstance (left, right) {
 ## new 操作符实现原理
 
 1. 使用`Object.create`创建一个空对象，并且隐式原型指向传入的显示原型
-2. 使用`apply`执行构造函数和确定`this`指向
+2. 使用`call`执行构造函数和确定`this`指向
 3. 返回空对象或者执行后拿到的对象
 
 ```js
 function myNew(fn, ...rest) {
   let obj = Object.create(fn.prototype)
-  let res = fn.apply(obj, ...rest)
+  let res = fn.call(obj, ...rest)
   if(res && (typeof res ==='object'|| typeof res === 'function')) {
     return res
   }
