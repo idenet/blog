@@ -299,11 +299,11 @@ const task = (light, timer) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       if(light ==='red') {
-        console.log('红灯亮')
+        red()
       } else if (light === 'yellow') {
-        console.log('黄灯亮')
+        yellow()
       } else {
-        console.log('绿灯亮')
+        green()
       }
       resolve()
     }, timer);
