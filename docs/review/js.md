@@ -59,8 +59,7 @@ function myNew(fn, ...rest) {
 ```js
 function debounce(fn, wait) {
   let timer = null
-  return function() {
-    args = arguments
+  return function(...args) {
     if(timer) {
       clearTimeout(timer)
       timer = null
@@ -242,7 +241,7 @@ function flatter(arr) {
 ```js
 function flatter2(arr) {
   if(!arr.length) return
-  if(arr.some(item => Array.isArray(item))) {
+  while(arr.some(item => Array.isArray(item))) {
     arr = [].concat(...arr)
   }
   return arr
