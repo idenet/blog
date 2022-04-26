@@ -174,6 +174,10 @@ let testPro = new Promise((resolve, reject) => {
     resolve(123)
   }, 1000);
 })
+let wrapPro = wrap(testPro);
+wrapPro.promise.then((res) => {
+  console.log(res);
+});
 // 取消
 wrapPro.resolve('取消了')
 ```
