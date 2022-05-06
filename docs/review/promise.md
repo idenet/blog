@@ -241,7 +241,7 @@ class Scheduler {
   }
   add(time, order) {
     const promiseCreator = () => {
-      return new Promsie((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         setTimeout(() => {
           console.log(order)
           resolve()
@@ -250,7 +250,7 @@ class Scheduler {
     }
     this.queue.push(promiseCreator)
   }
-  taskStar() {
+  taskStart() {
     for(let i=0;i< this.maxCount; i++) {
       this.request()
     }
