@@ -11,8 +11,6 @@ setTimeout  Date.now
 ```js
 <ul id="container"></ul>
 
-// 记录开始时间
-let now = Date.now()
 // 插入10w数据
 const total = 100000
 // 获取容器
@@ -24,9 +22,9 @@ for(let i=0;i< total; i++) {
   ul.appendChild(li)
 }
 
-console.log('js运行时间', Date.now() - now)
+console.start()
 setTimeout(() => {
-  console.log('运行总时间', Date.now() - now)
+  console.end()
 }, 0)
 
 ```
