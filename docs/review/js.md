@@ -437,8 +437,9 @@ function listToTree(data) {
         temp[temp[i].parentId].children = []
       }
       temp[temp[i].parentId].children.push(temp[i])
+    } else {
+      treeData.push(temp[i])
     }
-    treeData.push(temp[i])
   }
   return treeData
 }
